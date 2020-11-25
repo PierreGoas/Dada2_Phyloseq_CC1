@@ -3,7 +3,7 @@ title: "Dada2 tutorial"
 output: 
   github_document:
     toc: true
-    toc_depht: 2
+    toc_depth: 2
 ---
 
 ```{r}
