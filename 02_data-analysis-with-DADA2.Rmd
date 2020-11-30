@@ -6,109 +6,134 @@ output:
     toc_depth: 2
 ---
 
+#Tutoriel Dada2
+
+##Importation des librairies et préparation des données
+
 ```{r}
 library("Rcpp")
 library("dada2")
-
 ```
+On importe les galeries nécessaires pour la réalisation de l'excercie
 
 ```{r}
-
-path <- "~/MiSeq_SOP" # CHANGE ME to the directory containing the fastq files after unzipping.
-
+path <- "~/MiSeq_SOP"
 list.files(path)
-
 ```
+Chargement des données fastq sur la donnée path
 
 ```{r}
-# Forward and reverse fastq filenames have format: SAMPLENAME_R1_001.fastq and SAMPLENAME_R2_001.fastq
 fnFs <- sort(list.files(path, pattern="_R1_001.fastq", full.names = TRUE))
 fnRs <- sort(list.files(path, pattern="_R2_001.fastq", full.names = TRUE))
-# Extract sample names, assuming filenames have format: SAMPLENAME_XXX.fastq
 sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
 ```
+On sépare les forward et les reverse. Les forward seront associés à fnFS et les reverse à fnRs.
+Association des fnFs et fnRS entre eux (correspondance entre les données)
 
 ```{r}
 plotQualityProfile(fnFs[1:4])
 ```
+Affichage du graphe de qualité des données fnFs.
+En gris : heat map de la fréquence de chaque score de qualité de chaque position de base
+En vert : score de qualité moyen de chaque base
+En rouge : proportion graduée des reads jusqu'à une certaine position (ici, elle est plate car les reads faites sur Illumina sont de même longueur donc ce n'est pas très utile pour ce cas présent)
+Résultat : bon. On va couper les derniers nucléotides car on observe une chute sur la partie droite du graphe. Cette coupure de nucléotide permettra de donner des résultats plus fiable pour la suite des opérations. Ici, on va tronquer les nucléotides à partir de la position 240 (on retire les 10 derniers nucléotides).
 
 ```{r}
 plotQualityProfile(fnRs[1:4])
 ```
+Affichage du graphe de qualité des données fnRs
+Même codes couleurs que fnFs
+Résultat : les reads reverse sont de moins bonne qualité en particulier vers la fin. Ce n'est pas grave mais les nucléotides à partir de la position 160 seront supprimés (soit 90 nucléotides)
 
 ```{r}
-# Place filtered files in filtered/ subdirectory
 filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
 filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
 ```
+Les données fnFs et fnRs vont être filtrées. Tout d'abord, elles vont être placées sous un nouveau nom (ici, filtFs et filtRs)
 
 ```{r}
 out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160),
               maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
-              compress=TRUE, multithread=TRUE) # On Windows set multithread=FALSE
+              compress=TRUE, multithread=TRUE)
 head(out)
 ```
+Les données sont filtrés, ie que les derniers nucléotides vont être retirés (fnFs : à partir de 240; fnRd : à partir de 160). Seulement 2 erreurs peuvent être attendues lors de la filtration
 
-#apprentissage erreurs
+##Calcul des erreurs et visualisation de ces derniers
 
 calcul modèle erreurs à partir des données de séquençage. Applique méthodes sur forward puis reverse
 ```{r}
 errF <- learnErrors(filtFs, multithread=TRUE)
 ```
+Estimation du taux d'erreur de filtFs
 
 ```{r}
 errR <- learnErrors(filtRs, multithread=TRUE)
 ```
+Estimation du taux d'erreur de filtRs
 
 ```{r}
 plotErrors(errF, nominalQ=TRUE)
 ```
+Représentation des fréquences d'erreurs estimées.
+Points gris : taux d'erreurs observées pour chacun des scores de qualité consensus.
+Ligne noire : taux d'erreurs estimé après que l'algorithme ait réuni toutes les informations (liée aux taux d'erreurs estimés)
+Ligne rouge : taux d'erreurs attendu selon le Q-score
+Corrélation entre les taux d'erreurs estimés et observés, diminution quand le score de qualité augmente -> on peut poursuivre.
+
+##Application de Dada2 aux données
 
 ```{r}
 dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
 ```
+Application de l'algorithme d'inférence aux données filtrées et ajustées des reads forward
 
 ```{r}
 dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
 ```
+Application de l'algorithme d'inférence aux données filtrées et ajustées des reads reverse
 
 ```{r}
 dadaFs[[1]]
 ```
+Dada2 a déduit 128 séquences variantes à partir des 1979 séquences uniques.
 
-#Alignement R1 et R2 en 1 contig
+##Alignement des séquences Forward et Reverse
 
 ```{r}
 mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
-# Inspect the merger data.frame from the first sample
 head(mergers[[1]])
 ```
+Alignement des séquences pour former des contigues. L'alignement se fait avec les séquences forward et reverse se correspondant sur au moins 12 bases.
 
-#construction table d'observation
+## Table d'observation
 
 ```{r}
 seqtab <- makeSequenceTable(mergers)
 dim(seqtab)
 ```
+Construction d'ASV (table d'OTU)? Ici, sur les 20 échantillons, 293 ASV ont été crée
 
 ```{r}
-# Inspect distribution of sequence lengths
 table(nchar(getSequences(seqtab)))
 ```
+Visualisation de la distribution des longueurs de séquences. Ici, les différentes séquences obtenues sont d'une longueur située dans la région V4 de l'ARN16S
 
-#retire séq chimériques
+##Elimination des séquences chimériques
 
 ```{r}
 seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
 dim(seqtab.nochim)
 ```
+Dada a corrigé les erreurs de substitutions et d'index. Mais il reste les séquences chimériques (séquence contenant de l'information de plusiseurs autres séquences) à retirer. L'identification se fait par construction de deux séquences (une gauche et une droite), provenant de séquences dites parents retrouvées abondament dans notre échantillon. Ici, 20232 séquences chimériques ont été identifiées
 
 ```{r}
 sum(seqtab.nochim)/sum(seqtab)
 ```
-3.5% de séquences chimériques dans notre jeu de donnée
+Ces séquences chimériques représentent 3.5% de notre jeu de donnée
 
 #table récap, résumé des filtres effectués
 
@@ -120,6 +145,7 @@ colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "n
 rownames(track) <- sample.names
 head(track)
 ```
+Récapitulatif des reads qui ont traversé les différentes étapes de filtration et de tri.
 
 #télécharger base de silva
 
@@ -130,7 +156,9 @@ wget https://zenodo.org/record/3986799/files/silva_nr99_v138_train_set.fa.gz
 ```{r}
 taxa <- assignTaxonomy(seqtab.nochim, "~/Dada2_Phyloseq_CC1/silva_nr99_v138_train_set.fa.gz", multithread=TRUE)
 ```
+Assignation des séquences étudiées à la classification. Cette assignation se fait par rapport à une base de séquence de référence ayant une classification connue.
 
+Partie non réalisé
 #télécharger assignement espèces silva
 
 ```{bash}
@@ -140,6 +168,8 @@ wget https://zenodo.org/record/3986799/files/silva_species_assignment_v138.fa.gz
 ```{r}
 taxa <- addSpecies(taxa, "~/Dada2_Phyloseq_CC1/silva_species_assignment_v138.fa.gz")
 ```
+Fin de la partie no réalisé
+
 
 ```{r}
 taxa.print <- taxa # Removing sequence rownames for display only
