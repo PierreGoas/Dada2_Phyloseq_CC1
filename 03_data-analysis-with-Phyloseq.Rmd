@@ -6,9 +6,14 @@ output:
     toc_depth: 2
 ---
 
+#Tutoriel PhyloSeq
+
+##Importaion des librairies et installation des packages nécessaire pour le fonctionnement des opérations suivantes
+
 ```{r}
 library("knitr")
 library("BiocStyle")
+library("phyloseq")
 .cran_packages <- c("ggplot2", "gridExtra")
 .bioc_packages <- c("dada2", "phyloseq", "DECIPHER", "phangorn")
 .inst <- .cran_packages %in% installed.packages()
@@ -23,54 +28,65 @@ if(any(!.inst)) {
 # Load packages into session, and print package version
 sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
 ```
+Chargement des différents packages nécessaires pour le travail sur PhyloSeq
+NB : les packages sont laissés ici pour éviter les mauvaises surprises (packages introuvables...)
 
 
-
-#Importation des données
+##Importation des données
 
 ```{r}
 ps_connect <-url("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/ps.rds")
 ps = readRDS(ps_connect)
 ps
 ```
+On importe les données déjà traitées par dada2. Ce ne sont pas les données du fichier 02.
+
+##Filtration taxonomique
 
 ```{r}
 rank_names(ps)
 ```
-
+On montre les différents rangs présent dans le jeu de donnée ps.
 
 ```{r}
 table(tax_table(ps)[, "Phylum"], exclude = NULL)
 ```
+Création d'une table. On peut voir pour certains phylums, une seule souche a été identifiée.
 
 ```{r}
 ps <- subset_taxa(ps, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
 ```
+On retire les phylums dits ambigues, ie que ce sont peut-être des artefacts Ils peuvent influencer sur la suite des oprétaions donc ils doivent être retirés
 
 ```{r}
 prevdf = apply(X = otu_table(ps),
                MARGIN = ifelse(taxa_are_rows(ps), yes = 1, no = 2),
                FUN = function(x){sum(x > 0)})
 ```
+On détermine la prévalence, ie le nombre de fois où un échantillon est au moins une fois présent dans un des taxons. Pour cette ligne de code, on détermine leur prévalence dans les phylums 
 
 ```{r}
 prevdf = data.frame(Prevalence = prevdf,
                     TotalAbundance = taxa_sums(ps),
                     tax_table(ps))
 ```
+Pour les prévalences des phylums obtenues, une taxonomie, ainsi que le nombre total de read, ont été ajoutés
 
 ```{r}
 plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$Prevalence))})
 ```
+Ici, on calcul la prévalence totale (colonne 2) et prévalence moyenne (colonne 1) de chaque échantillon dans chacun des phylums. Par exemple, pour Fusobacteria, le total et la moyenne sont égaux, ie qu'il est deux fois dans le même échantillon. Pour Proteobacteria, on en dénombre 650. Si on divise par la prévalence moyenne, on obtient environ 11. Il est donc présent dans 11 échantillons différents.
 
 ```{r}
 filterPhyla = c("Fusobacteria", "Deinococcus-Thermus")
 ```
+On définit les phylums à filtrer
 
 ```{r}
 ps1 = subset_taxa(ps, !Phylum %in% filterPhyla)
 ps1
 ```
+On filtre les données, ie qu'on retire les phylums que l'on a décrit juste avant.
 
 ```{r}
 # Subset to the remaining phyla
