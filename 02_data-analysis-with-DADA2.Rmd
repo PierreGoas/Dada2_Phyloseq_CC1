@@ -30,6 +30,8 @@ sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
 On sépare les forward et les reverse. Les forward seront associés à fnFS et les reverse à fnRs.
 Association des fnFs et fnRS entre eux (correspondance entre les données)
 
+##Inspection des profils de qualité des reads
+
 ```{r}
 plotQualityProfile(fnFs[1:4])
 ```
@@ -45,6 +47,8 @@ plotQualityProfile(fnRs[1:4])
 Affichage du graphe de qualité des données fnRs
 Même codes couleurs que fnFs
 Résultat : les reads reverse sont de moins bonne qualité en particulier vers la fin. Ce n'est pas grave mais les nucléotides à partir de la position 160 seront supprimés (soit 90 nucléotides)
+
+##Filtration et tri des donnnées
 
 ```{r}
 filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
@@ -135,7 +139,7 @@ sum(seqtab.nochim)/sum(seqtab)
 ```
 Ces séquences chimériques représentent 3.5% de notre jeu de donnée
 
-#table récap, résumé des filtres effectués
+##Résumé des opérations effectuées précédement
 
 ```{r}
 getN <- function(x) sum(getUniques(x))
@@ -147,7 +151,7 @@ head(track)
 ```
 Récapitulatif des reads qui ont traversé les différentes étapes de filtration et de tri.
 
-#télécharger base de silva
+##Téléchargement des données Silva
 
 ```{bash}
 wget https://zenodo.org/record/3986799/files/silva_nr99_v138_train_set.fa.gz
@@ -158,8 +162,7 @@ taxa <- assignTaxonomy(seqtab.nochim, "~/Dada2_Phyloseq_CC1/silva_nr99_v138_trai
 ```
 Assignation des séquences étudiées à la classification. Cette assignation se fait par rapport à une base de séquence de référence ayant une classification connue.
 
-Partie non réalisé
-#télécharger assignement espèces silva
+##Téléchargement des données Silva permmetant l'assignement d'espèces aux des séquences analysées
 
 ```{bash}
 wget https://zenodo.org/record/3986799/files/silva_species_assignment_v138.fa.gz
@@ -176,28 +179,33 @@ taxa.print <- taxa # Removing sequence rownames for display only
 rownames(taxa.print) <- NULL
 head(taxa.print)
 ```
+L'assignation taxonomique donne le tableau ci-dessus. Elle donne jusqu'à le genre ce qu'elle a pu identifier des reads à analyser, en les comparant avec les reads contenus dans la banque de Silva.
 
-```{bash}
-wget http://www2.decipher.codes/DECIPHER_2.18.1.zip
-```
-
-```{bash}
-wget http://www2.decipher.codes/Classification/TrainingSets/SILVA_SSU_r138_2019.RData
-```
+##Evaluation de la précisison
 
 ```{r}
 unqs.mock <- seqtab.nochim["Mock",]
 unqs.mock <- sort(unqs.mock[unqs.mock>0], decreasing=TRUE) # Drop ASVs absent in the Mock
 cat("DADA2 inferred", length(unqs.mock), "sample sequences present in the Mock community.\n")
 ```
+"Mock community" est un ensemble contenant différentes souches connues qui ont été séquencées. Cette communauté contient 20 souches différentes. On utilise Dada2 sur cette communauté pour vérifier sa précision. Ici, dada2 a déduit 20 échantillons avec des séquences.
 
 ```{r}
 mock.ref <- getSequences(file.path(path, "HMP_MOCK.v35.fasta"))
 match.ref <- sum(sapply(names(unqs.mock), function(x) any(grepl(x, mock.ref))))
 cat("Of those,", sum(match.ref), "were exact matches to the expected reference sequences.\n")
 ```
+Parmi ces 20 échantillons, 20 correspondaient aux séquences de références. Dada2 fonctionne bien.
 
-#essai phyloseq
+#Premier sur Phyloseq (fin tuto Dada2)
+
+##Préparation des données
+
+```{r}
+library(phyloseq)
+library(Biostrings)
+library(ggplot2)
+```
 
 ```{r}
 samples.out <- rownames(seqtab.nochim)
@@ -210,6 +218,7 @@ samdf$When <- "Early"
 samdf$When[samdf$Day>100] <- "Late"
 rownames(samdf) <- samples.out
 ```
+On assigne les différentes données dans des fichiers.
 
 ```{r}
 library("phyloseq")
@@ -218,6 +227,7 @@ ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE),
                tax_table(taxa))
 ps <- prune_samples(sample_names(ps) != "Mock", ps) # Remove mock sample
 ```
+Construction de l'objet PhyloSeq : on associe la table des OTU, les données des échnatillons et de la table taxonomique à ps. La dernière ligne permet d'enlever la communité artificielle ("mock")
 
 ```{r}
 dna <- Biostrings::DNAStringSet(taxa_names(ps))
@@ -226,26 +236,33 @@ ps <- merge_phyloseq(ps, dna)
 taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
 ps
 ```
+Visualisation de l'objet PhyloSeq
+
+##Visualisation de l'alpha diversité
 
 ```{r}
 plot_richness(ps, x="Day", measures=c("Shannon", "Simpson"), color="When")
 ```
+Pas de grandes différences entre les échantillons contenus dans prélévements "early" (entre eux) et les prélévemnts "late" (entre aux aussi)
+
+##Ordination
 
 ```{r}
 ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
 ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
 ```
-
+On transforme les données pour qu'ils soient adaptés à l'utilisation de Bray-Curtis, un indice de dissimilarité.
 ```{r}
 plot_ordination(ps.prop, ord.nmds.bray, color="When", title="Bray NMDS")
 ```
+A partir de ce graphe, on peut une grande différence entre les échantillons "early" et "late"
+
+## Représention des échantillons en "histogramme" (bar plot)
 
 ```{r}
-library("Biostrings")
-library("ggplot2")
 top20 <- names(sort(taxa_sums(ps), decreasing=TRUE))[1:20]
 ps.top20 <- transform_sample_counts(ps, function(OTU) OTU/sum(OTU))
 ps.top20 <- prune_taxa(top20, ps.top20)
 plot_bar(ps.top20, x="Day", fill="Family") + facet_wrap(~When, scales="free_x")
 ```
-
+On observe qu'il n'y a pas de grande différence entre les échantillons "early" et "late" au niveau des familles de micro-organismes.
