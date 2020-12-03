@@ -207,15 +207,16 @@ On s'est demandé ce qui pouvait expliquer l'abondance de plusieurs en taxons au
 ```{r}
 qplot(sample_data(ps)$age, geom = "histogram",binwidth=20) + xlab("age")
 ```
-Il s'agit d'un histogramme montrant le nombre de souris en fonction de leur âge.
+Il s'agit d'un histogramme montrant le nombre de souris en fonction de leur âge (en jours). On observe 3 pics où les âges sont différents : jeune, moyen at âgé
 
 #Histograms comparing raw and log transformed read depths
 ```{r}
 qplot(log10(rowSums(otu_table(ps))),binwidth=0.2) +
   xlab("Logged counts-per-sample")
 ```
+Sur ce graph, on compare les reads brutes et les reads en log. Cela permet de déterminer quel log employer pour permettre d'affiner les résultats pour la PCoa.
 
-#Analyse d'ordination avec l'abondance de log
+##Analyse d'ordination avec l'abondance de log
 ```{r}
 sample_data(ps)$age_binned <- cut(sample_data(ps)$age,
                           breaks = c(0, 100, 200, 400))
@@ -228,30 +229,36 @@ plot_ordination(pslog, out.wuf.log, color = "age_binned") +
   labs(col = "Binned Age") +
   coord_fixed(sqrt(evals[2] / evals[1]))
 ```
+On effectue une PCoA en utilisant Bray-Curtis pour mesurer la dissimilarité entre les échantillons. On observe que la majeure partie des souris ne présentent pas de différence avec leur âge. Cependant, certaines valeurs sont aberrantes (2 femelles et 4 mâles), il faut donc les retirer.
 
-#Montrer la dominance d'un seul ASV sur les autres
+#Montrer la dominance d'un seul ASV chez les souris aberrantes
 ```{r}
 rel_abund <- t(apply(otu_table(ps), 1, function(x) x / sum(x)))
 qplot(rel_abund[, 12], geom = "histogram",binwidth=0.05) +
   xlab("Relative abundance")
 ```
+En analysant les 2 souris femelles aberrantes, il a été constaté qu'un ASV prédominait (90%) par rapport aux autres. Chez les autres souris, cet ASV repésente moins de 20%. Le fait de retirer ces souris vont permettre de donner des résultats plus fiables pour la suite.
 
-#Différents projections d'ordinations
+##Différentes projections d'ordinations
+
 ```{r}
 outliers <- c("F5D165", "F6D165", "M3D175", "M4D175", "M5D175", "M6D175")
 ps <- prune_samples(!(sample_names(ps) %in% outliers), ps)
 ```
+On affecte les valeurs aberrantes à "outliers". On indique à ps les valeurs aberrantes à retirer.
 
 ```{r}
 which(!rowSums(otu_table(ps)) > 1000)
 ```
+Echantillons ayant moins de 1000 reads
 
 ```{r}
 ps <- prune_samples(rowSums(otu_table(ps)) > 1000, ps)
 pslog <- transform_sample_counts(ps, function(x) log(1 + x))
 ```
+On retire à ps les échantillons ayant moins de 1000 reads et on transforme les données avec log(x+1) pour affiner les résultats
 
-#Graph PCoA Bray-Curtis entre échantillons
+##PCoA Bray-Curtis entre échantillons
 ```{r}
 out.pcoa.log <- ordinate(pslog,  method = "MDS", distance = "bray")
 evals <- out.pcoa.log$values[,1]
@@ -259,9 +266,8 @@ plot_ordination(pslog, out.pcoa.log, color = "age_binned",
                   shape = "family_relationship") +
   labs(col = "Binned Age", shape = "Litter")+
   coord_fixed(sqrt(evals[2] / evals[1]))
-
-
 ```
+On observe une forte dissimilarité entre les jeunes souris et les souris moyennes, qu'elles soient de sexe mâle ou femelle et provenant de deux litières différentes. L'âge a une influence sur la communauté microbienne au sein des souris.
 
 #DPCoA : nouvelles informations phylogénétique (double) Visualisation des échantillons et catégories taxonomiques
 ```{r}
@@ -272,14 +278,16 @@ plot_ordination(pslog, out.dpcoa.log, color = "age_binned", label= "SampleID",
   labs(col = "Binned Age", shape = "Litter")+
   coord_fixed(sqrt(evals[2] / evals[1]))
 ```
+Cette DPCoa ajoute des informations phylogénétiques aux données. Sur l'axe 1, on observe une variabilité de 75% tandis que sur l'axe 2, on observe une variabilité de 8,5%. L'axe 2  montre les différences entre les jeunes souris des souris d'âge moyen, comme précédemment. Les données phylogénétiques associées aux souris montrent que les taxons Firmicutes ont une forte abondance chez ces souris, analyses confirmées par le graphe suivant.
 
-#Taxon responsable de l'axe 1 et 2
+##Taxon responsable de l'axe 1 et 2
 ```{r}
 plot_ordination(pslog, out.dpcoa.log, type = "species", color = "Phylum") +
   coord_fixed(sqrt(evals[2] / evals[1]))
 ```
+Confirmation de la prédominance des Firmicutes.
 
-#Positions des échantillons produits par PCoA utilisant weighted UniFrac
+##Positions des échantillons produits par PCoA utilisant weighted UniFrac
 ```{r}
 out.wuf.log <- ordinate(pslog, method = "PCoA", distance ="wunifrac")
 evals <- out.wuf.log$values$Eigenvalues
@@ -288,6 +296,7 @@ plot_ordination(pslog, out.wuf.log, color = "age_binned",
   coord_fixed(sqrt(evals[2] / evals[1])) +
   labs(col = "Binned Age", shape = "Litter")
 ```
+On utilise l'UniFrac pondére pour examiner les résultats donnés par la PCoA. On peut selon l'axe 2, une différence entre les souris d'âge différent, confirmant la PCoA. Mais la DPCoA a apporté plus d'informations sur le deuxième axe que n'offre l'UniFrac.
 
 #Why are the ordination plots so far from square?
 
