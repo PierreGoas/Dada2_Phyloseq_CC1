@@ -88,40 +88,49 @@ ps1
 ```
 On filtre les données, ie qu'on retire les phylums que l'on a décrit juste avant.
 
+##Filtre des prévalences
+
 ```{r}
-# Subset to the remaining phyla
 prevdf1 = subset(prevdf, Phylum %in% get_taxa_unique(ps1, "Phylum"))
 ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(ps),color=Phylum)) +
-  # Include a guess for parameter
   geom_hline(yintercept = 0.05, alpha = 0.5, linetype = 2) +  geom_point(size = 2, alpha = 0.7) +
   scale_x_log10() +  xlab("Total Abundance") + ylab("Prevalence [Frac. Samples]") +
   facet_wrap(~Phylum) + theme(legend.position="none")
 ```
+Graphe représentant la prévalence des taxons en fonction de l'abondance totale (cela permet de mettre en évidence des valeurs aberrantes qui doivent être supprimées).
+Un point représente un taxon. Certains taxons sont plus présents que d'autres (cf Firmicutes). Il convient de poser un seuil de prévalence car la mjorité des taxons sont supérieurs à 10%
+
 
 ```{r}
 prevalenceThreshold = 0.05 * nsamples(ps)
 prevalenceThreshold
 ```
+On pose un seuil de prévalence à 5%. Les taxons qui se trouvaient en dessous de ce seuil ont été enlevés. 18 taxons vont être retirés lors de l'application du seuil de prévalence.
 
 ```{r}
 keepTaxa = rownames(prevdf1)[(prevdf1$Prevalence >= prevalenceThreshold)]
 ps2 = prune_taxa(keepTaxa, ps)
 ```
+On applique le seuil de prévalence de 5%, retirant les 18 taxons se trouvant en dessous de cette limite. ps2 regroupe les taxons après ce filtrage.
 
+##Agglomération des taxons
+ 
 ```{r}
 length(get_taxa_unique(ps2, taxonomic.rank = "Genus"))
 ```
-
+Après filtrage, 49 genres pourront être visualisés
 ```{r}
 ps3 = tax_glom(ps2, "Genus", NArm = TRUE)
 ```
+On applique à ps3, l'agglomération des genres venant de ps2. Toutes les caractéristiques fonctionnelles que l'on retrouvait souvent dans les données ont été regroupées ensemble.
 
 ```{r}
 h1 = 0.4
 ps4 = tip_glom(ps2, h = h1)
 ```
+h1 représente la hauteur d'arbre qui définit la distance phylogénétique entre les différentes caractéristiques. On applique à ps4 cette distance phylogénétique. A la différence de ps2, on s'intéresses ici à une agglomération sans prendre en compte la taxonomie, donc une agglomération phylogénétique.
 
-#Comparaison données non filtrées, agglo taxonomique et agglo phylogénique7
+##Comparaison données non filtrées, agglomération taxonomique et agglomération phylogénique
 
 ```{r}
 multiPlotTitleTextSize = 15
@@ -136,14 +145,16 @@ p4tree = plot_tree(ps4, method = "treeonly",
                    ladderize = "left", title = "By Height") +
   theme(plot.title = element_text(size = multiPlotTitleTextSize))
 ```
+On stocke les données préparées auapravant dans les ptree qui leurs associées pour pouvoir obtenir un graphe permettant de les comparer entre eux.
 
-#Group plots together (différents type d'agglo)
+##Group plots together (différents type d'agglo)
 
 ```{r}
 gridExtra::grid.arrange(nrow = 1, p2tree, p3tree, p4tree)
 ```
+On peut que l'agglomération par genre et par la distance phylogénétique améliore la lisibilité des données. On a un meilleur aperçu de la répartition des échantillons.
 
-#Abundance Value Transformation
+##Transformation des valeurs d'abondance
 
 ```{r}
 plot_abundance = function(physeq,title = "",
@@ -161,36 +172,42 @@ plot_abundance = function(physeq,title = "",
     theme(legend.position="none")
 }
 ```
+Tout d'abord, on définit une fonction qui va utiliser phyloseq pour définir un graphique d'abondance relative. Cela va nous permettra de comparer ces valeurs avec les abondances dans leur échelle et leur distribution.
 
 ```{r}
 # Transform to relative abundance. Save as new object.
 ps3ra = transform_sample_counts(ps3, function(x){x / sum(x)})
 ```
+Transformation des données en abondane relative
 
 ```{r}
 #Affiche abondance avant et après la mise en "relative"
 plotBefore = plot_abundance(ps3,"")
 plotAfter = plot_abundance(ps3ra,"")
 ```
+On affecte ps3 (avant transformation) et ps3ra (après transformation ne abondance relative) à deux datas
 
 ```{r}
 # Combine each plot into one graphic.
 gridExtra::grid.arrange(nrow = 2,  plotBefore, plotAfter)
 ```
+Affichage des graphes avant et après transformations. En haut, nous avons les graphes d'abondances originales et en bas les graphes d'abondances relatives. On peut voir des similutes entre les deux sexes, notamment pour Erysipelotrichales et Lactobacillales. On observe chez ces derniers, deux endroits sur le graphe où on oberve plusieurs taxons (élargissement des figures).
+En observant l'abondance relative, on peut voir une abondance plus importante que les abondances originalles (soit absolue). Ces abondances relatives sont obtenus en divisant le nombre de fois que les taxons sont observés dans l'ensemble de tous les taxons. Ces valeurs doivent être interprétées avec attention. Par exemple, si la population augmente mais que la population ne bouge pas, son abondance relative diminue. Cette abondance sert plutôt à donner un aperçu de la diversité de la communauté.
 
-#Subset by taxonomy
+##Taxonomie des sous-ensembles
 
 ```{r}
 psOrd = subset_taxa(ps3ra, Order == "Lactobacillales")
 plot_abundance(psOrd, Facet = "Genus", Color = NULL)
 ```
+On s'est demandé ce qui pouvait expliquer l'abondance de plusieurs en taxons au deux endroits du graphe. On examine par ce code les sous-ensembles des Lactobacillales. On observe des Lactobacillus et Streptococcus, deux familles de bactéries qui prédominent chez Lactobacillales dans ces échantillons. On observe une plus grande abondance des Lactobacillus que de Streptococcus.
 
+##Prétraitement des données
 
-#Preprocessing
-#Graphe Histogramme groupe d'âge
 ```{r}
 qplot(sample_data(ps)$age, geom = "histogram",binwidth=20) + xlab("age")
 ```
+Il s'agit d'un histogramme montrant le nombre de souris en fonction de leur âge.
 
 #Histograms comparing raw and log transformed read depths
 ```{r}
