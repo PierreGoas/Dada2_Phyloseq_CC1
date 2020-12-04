@@ -56,14 +56,14 @@ Création d'une table. On peut voir pour certains phylums, une seule souche a é
 ```{r}
 ps <- subset_taxa(ps, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
 ```
-On retire les phylums dits ambigues, ie que ce sont peut-être des artefacts Ils peuvent influencer sur la suite des oprétaions donc ils doivent être retirés
+On retire les phylums dits ambigues, ie que ce sont peut-être des artefacts Ils peuvent influencer sur la suite des opérations donc ils doivent être retirés
 
 ```{r}
 prevdf = apply(X = otu_table(ps),
                MARGIN = ifelse(taxa_are_rows(ps), yes = 1, no = 2),
                FUN = function(x){sum(x > 0)})
 ```
-On détermine la prévalence, ie le nombre de fois où un échantillon est au moins une fois présent dans un des taxons. Pour cette ligne de code, on détermine leur prévalence dans les phylums 
+On détermine la prévalence, ie le nombre de fois où un échantillon est au moins une fois présent dans un des taxons. Pour cette ligne de code, on détermine leur prévalence dans les phylums.
 
 ```{r}
 prevdf = data.frame(Prevalence = prevdf,
@@ -75,7 +75,7 @@ Pour les prévalences des phylums obtenues, une taxonomie, ainsi que le nombre t
 ```{r}
 plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$Prevalence))})
 ```
-Ici, on calcul la prévalence totale (colonne 2) et prévalence moyenne (colonne 1) de chaque échantillon dans chacun des phylums. Par exemple, pour Fusobacteria, le total et la moyenne sont égaux, ie qu'il est deux fois dans le même échantillon. Pour Proteobacteria, on en dénombre 650. Si on divise par la prévalence moyenne, on obtient environ 11. Il est donc présent dans 11 échantillons différents.
+Ici, on calcule la prévalence totale (colonne 2) et la prévalence moyenne (colonne 1) de chaque échantillon dans chacun des phylums. Par exemple, pour Fusobacteria, le total et la moyenne sont égaux, ie qu'il est deux fois dans le même échantillon. Pour Proteobacteria, on en dénombre 650. Si on divise par la prévalence moyenne, on obtient environ 11. Il est donc présent dans 11 échantillons différents.
 
 ```{r}
 filterPhyla = c("Fusobacteria", "Deinococcus-Thermus")
@@ -97,15 +97,15 @@ ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(ps),color=Phylum)) +
   scale_x_log10() +  xlab("Total Abundance") + ylab("Prevalence [Frac. Samples]") +
   facet_wrap(~Phylum) + theme(legend.position="none")
 ```
-Graphe représentant la prévalence des taxons en fonction de l'abondance totale (cela permet de mettre en évidence des valeurs aberrantes qui doivent être supprimées).
-Un point représente un taxon. Certains taxons sont plus présents que d'autres (cf Firmicutes). Il convient de poser un seuil de prévalence car la mjorité des taxons sont supérieurs à 10%
+Graphes représentant la prévalence des taxons en fonction de l'abondance totale (cela permet de mettre en évidence des valeurs aberrantes qui doivent être supprimées).
+Un point représente un taxon. Certains taxons sont plus présents que d'autres (cf Firmicutes). Il convient de poser un seuil de prévalence car la majorité des taxons sont supérieurs à 10%.
 
 
 ```{r}
 prevalenceThreshold = 0.05 * nsamples(ps)
 prevalenceThreshold
 ```
-On pose un seuil de prévalence à 5%. Les taxons qui se trouvaient en dessous de ce seuil ont été enlevés. 18 taxons vont être retirés lors de l'application du seuil de prévalence.
+On pose un seuil de prévalence à 5%. Les taxons qui se trouvent en dessous de ce seuil vont être enlevés. 18 taxons vont être retirés lors de l'application du seuil de prévalence.
 
 ```{r}
 keepTaxa = rownames(prevdf1)[(prevdf1$Prevalence >= prevalenceThreshold)]
@@ -119,6 +119,7 @@ On applique le seuil de prévalence de 5%, retirant les 18 taxons se trouvant en
 length(get_taxa_unique(ps2, taxonomic.rank = "Genus"))
 ```
 Après filtrage, 49 genres pourront être visualisés
+
 ```{r}
 ps3 = tax_glom(ps2, "Genus", NArm = TRUE)
 ```
@@ -176,7 +177,7 @@ Tout d'abord, on définit une fonction qui va utiliser phyloseq pour définir un
 ```{r}
 ps3ra = transform_sample_counts(ps3, function(x){x / sum(x)})
 ```
-Transformation des données en abondane relative
+Transformation des données en abondance relative
 
 ```{r}
 plotBefore = plot_abundance(ps3,"")
@@ -206,13 +207,15 @@ qplot(sample_data(ps)$age, geom = "histogram",binwidth=20) + xlab("age")
 Il s'agit d'un histogramme montrant le nombre de souris en fonction de leur âge (en jours). On observe 3 pics où les âges sont différents : jeune, moyen at âgé
 
 ## Histograms comparing raw and log transformed read depths
+
 ```{r}
 qplot(log10(rowSums(otu_table(ps))),binwidth=0.2) +
   xlab("Logged counts-per-sample")
 ```
-Sur ce graph, on compare les reads brutes et les reads en log. Cela permet de déterminer quel log employer pour permettre d'affiner les résultats pour la PCoa.
+Sur ce graph, on compare les reads brutes et les reads en log. Cela permet de déterminer quel log employer pour permettre d'affiner les résultats pour la PCoA.
 
 ## Analyse d'ordination avec l'abondance de log
+
 ```{r}
 sample_data(ps)$age_binned <- cut(sample_data(ps)$age,
                           breaks = c(0, 100, 200, 400))
@@ -225,15 +228,16 @@ plot_ordination(pslog, out.wuf.log, color = "age_binned") +
   labs(col = "Binned Age") +
   coord_fixed(sqrt(evals[2] / evals[1]))
 ```
-On effectue une PCoA en utilisant Bray-Curtis pour mesurer la dissimilarité entre les échantillons. On observe que la majeure partie des souris ne présentent pas de différence avec leur âge. Cependant, certaines valeurs sont aberrantes (2 femelles et 4 mâles), il faut donc les retirer.
+On effectue une PCoA en utilisant Bray-Curtis pour mesurer la dissimilarité entre les échantillons. On observe que la majeure partie des souris ne présente pas de différence avec leur âge. Cependant, certaines valeurs sont aberrantes (2 femelles et 4 mâles), il faut donc les retirer.
 
 ## Montrer la dominance d'un seul ASV chez les souris aberrantes
+
 ```{r}
 rel_abund <- t(apply(otu_table(ps), 1, function(x) x / sum(x)))
 qplot(rel_abund[, 12], geom = "histogram",binwidth=0.05) +
   xlab("Relative abundance")
 ```
-En analysant les 2 souris femelles aberrantes, il a été constaté qu'un ASV prédominait (90%) par rapport aux autres. Chez les autres souris, cet ASV repésente moins de 20%. Le fait de retirer ces souris vont permettre de donner des résultats plus fiables pour la suite.
+En analysant les 2 souris femelles aberrantes, il a été constaté qu'un ASV prédominait (90%) par rapport aux autres. Chez les autres souris, cet ASV repésente moins de 20%. Le fait de retirer ces souris va permettre de donner des résultats plus fiables pour la suite.
 
 # Différentes projections d'ordinations
 
@@ -255,6 +259,7 @@ pslog <- transform_sample_counts(ps, function(x) log(1 + x))
 On retire à ps les échantillons ayant moins de 1000 reads et on transforme les données avec log(x+1) pour affiner les résultats
 
 ## PCoA Bray-Curtis entre échantillons
+
 ```{r}
 out.pcoa.log <- ordinate(pslog,  method = "MDS", distance = "bray")
 evals <- out.pcoa.log$values[,1]
@@ -266,6 +271,7 @@ plot_ordination(pslog, out.pcoa.log, color = "age_binned",
 On observe une forte dissimilarité entre les jeunes souris et les souris moyennes, qu'elles soient de sexe mâle ou femelle et provenant de deux litières différentes. L'âge a une influence sur la communauté microbienne au sein des souris.
 
 ## DPCoA : nouvelles informations phylogénétique (double) Visualisation des échantillons et catégories taxonomiques
+
 ```{r}
 out.dpcoa.log <- ordinate(pslog, method = "DPCoA")
 evals <- out.dpcoa.log$eig
@@ -277,6 +283,7 @@ plot_ordination(pslog, out.dpcoa.log, color = "age_binned", label= "SampleID",
 Cette DPCoa ajoute des informations phylogénétiques aux données. Sur l'axe 1, on observe une variabilité de 75% tandis que sur l'axe 2, on observe une variabilité de 8,5%. L'axe 2  montre les différences entre les jeunes souris des souris d'âge moyen, comme précédemment. Les données phylogénétiques associées aux souris montrent que les taxons Firmicutes ont une forte abondance chez ces souris, analyses confirmées par le graphe suivant.
 
 ## Taxon responsable de l'axe 1 et 2
+
 ```{r}
 plot_ordination(pslog, out.dpcoa.log, type = "species", color = "Phylum") +
   coord_fixed(sqrt(evals[2] / evals[1]))
@@ -284,6 +291,7 @@ plot_ordination(pslog, out.dpcoa.log, type = "species", color = "Phylum") +
 Confirmation de la prédominance des Firmicutes.
 
 ## Positions des échantillons produits par PCoA utilisant weighted UniFrac
+
 ```{r}
 out.wuf.log <- ordinate(pslog, method = "PCoA", distance ="wunifrac")
 evals <- out.wuf.log$values$Eigenvalues
@@ -292,10 +300,11 @@ plot_ordination(pslog, out.wuf.log, color = "age_binned",
   coord_fixed(sqrt(evals[2] / evals[1])) +
   labs(col = "Binned Age", shape = "Litter")
 ```
-On utilise l'UniFrac pondére pour examiner les résultats donnés par la PCoA. On peut voir selon l'axe 2, une différence entre les souris d'âge différent, confirmant la PCoA. Mais la DPCoA a apporté plus d'informations sur le deuxième axe que n'offre l'UniFrac.
+On utilise l'UniFrac pondérée pour examiner les résultats donnés par la PCoA. On peut voir selon l'axe 2, une différence entre les souris d'âge différent, confirmant la PCoA. Mais la DPCoA a apporté plus d'informations sur le deuxième axe que n'offre l'UniFrac.
 
 
 ## Analyse en Composantes Principales sur les rangs
+
 ```{r}
 abund <- otu_table(pslog)
 abund_ranks <- t(apply(abund, 1, rank))
@@ -309,6 +318,7 @@ abund_ranks[abund_ranks < 1] <- 1
 Certains bactéries sont absentes ou ont une très faible abondance dans les échantillons (ils peuvent être dans certains échantillons mais absents dans d'autres). On pose un seuil au niveau des rangs et toutes les bactéries dont les rangs sont inférieurs au seuil seront attribuées au rang 1.
 
 ## Transformation de données PCA (réduit les dimensions)
+
 ```{r}
 library(dplyr)
 library(reshape2)
@@ -328,7 +338,7 @@ ggplot(abund_df %>%
   labs(x = "Abundance", y = "Thresholded rank") +
   scale_color_brewer(palette = "Set2")
 ```
-Après transformation (imposé le seuil des rangs). On observe une varition d'abondance pour de nombreuses bactéries de rang 1. Mais l'abondance augmente continuellement au fur et à mesure que les rangs augmentent, et donc que la taille des bactéries augemente. 
+Après transformation (imposé le seuil des rangs). On observe une variation d'abondance pour de nombreuses bactéries de rang 1. Mais l'abondance augmente continuellement au fur et à mesure que les rangs augmentent, et donc que la taille des bactéries augemente. 
 
 ## Donne graphe après troncation de certains rangs
 ```{r}
@@ -370,7 +380,7 @@ On a effectuer une Analyse en Composantes Principales (ACP). Ici, aucune transfo
 ```{r}
 ps_ccpna <- ordinate(pslog, "CCA", formula = pslog ~ age_binned + family_relationship)
 ```
-On va effectuer une CCpna. Pour cela, il est nécessaire d'ajouter des un argument, précisant quelles caractéristiques à prendre en compte. Sinon, on peut utilise toutes les données par défaut.
+On va effectuer une CCpna. Pour cela, il est nécessaire d'ajouter un argument, précisant quelles caractéristiques à prendre en compte. Sinon, on peut utiliser toutes les données par défaut.
 
 ```{r}
 library(ggrepel)
@@ -399,7 +409,7 @@ ggplot() +
   coord_fixed(sqrt(ps_ccpna$CCA$eig[2] / ps_ccpna$CCA$eig[1])*0.45   ) +
   theme(panel.border = element_rect(color = "#787878", fill = alpha("white", 0)))
 ```
-Ce code ne fonctionne pas car il est sensé utiliser les données du site d'où proviennent les données. On est supposé avoir deux graphiques : le premier concernant la portée 1, et le second, la portée 2. On aurait visualiser les quatre taxons les plus abondants parmi les 23 présents. On aurait également vu sur le premier graphique une nette différence entre les souris jeunes et plus âgées sur l'axe des ordonnées.
+On a deux graphiques : le premier concernant la portée 1, et le second, la portée 2. On visualise les quatres taxons les plus abondants parmi les 23 présents. On voit également sur le premier graphique une nette différence entre les souris jeunes et plus âgées sur l'axe des ordonnées.
 
 # Supervisation de l'apprentissage
 
@@ -421,9 +431,9 @@ On divise les données pour former des ensembles dits de formations et de tests,
 plsClasses <- predict(plsFit, newdata = testing)
 table(plsClasses, testing$age)
 ```
-Prédiction de l'âge des souris (en jours). La prédiction est très bien faite si on le compare aux données précédement faites. 63 souris ont etre 0 et 100 jours, et 4 souris ont 100 jours (cf bornes des intervalles).
+Prédiction de l'âge des souris (en jours). La prédiction est très bien faite si on le compare aux données précédement faites. 63 souris ont entre 0 et 100 jours, et 4 souris ont 100 jours (cf bornes des intervalles).
 
-## Prédiction de l'âge de fôret aléatoire
+## Prédiction de l'âge de forêt aléatoire
 ```{r}
 library(randomForest)
 rfFit <- train(age ~ ., data = training, method = "rf",
@@ -431,7 +441,7 @@ rfFit <- train(age ~ ., data = training, method = "rf",
 rfClasses <- predict(rfFit, newdata = testing)
 table(rfClasses, testing$age)
 ```
-Autre exemple de classification selon l'âge (en années) des arbres.
+Autre exemple de classification selon l'âge (en années) des forêts
 
 ## Différentes bactéries en fonction de l'âge
 
@@ -522,7 +532,7 @@ gt <- graph_perm_test(ps, "family_relationship", grouping = "host_subject_id",
                       distance = "jaccard", type = "mst")
 gt$pval
 ```
-Imbrication de la structure. Les données des individus sont regroupées et il ne faudrait pas que cela se casse. C'est pourquoi on indique qu'on garde cette structure quand on permutera les étiquettes.
+Imbrication de la structure. Les données des individus sont regroupées et il ne faudrait pas que cela se casse. C'est pourquoi on indique qu'on garde cette structure intacte quand on permutera les étiquettes.
 
 ```{r}
 plotNet1=plot_test_network(gt) + theme(legend.text = element_text(size = 8),
@@ -543,7 +553,7 @@ plotNet2=plot_test_network(gt) + theme(legend.text = element_text(size = 8),
 plotPerm2=plot_permutations(gt)
 grid.arrange(ncol = 2,  plotNet2, plotPerm2)
 ```
-Les graphiques montrent que les paires d'échantillons ayant un lien entre eux, il est fort probable qu'ils viennent d'une même portée.
+Les graphiques montrent que les paires d'échantillons qui ont un lien entre eux, viennent de la même portée (du moins, c'est très probable)
 
 ## Modélisation linéaire: Diversité de Shannon associé à chaque échantillon et joint avec annotation de l'échantillon
 
@@ -619,7 +629,7 @@ ps_dds <- estimateSizeFactors(ps_dds, geoMeans = geoMeans)
 ps_dds <- estimateDispersions(ps_dds)
 abund <- getVarianceStabilizedData(ps_dds)
 ```
-
+Code calculant la transformation de la variance. On prépare les données pour la hiérarchisation qui viendra après.
 
 ## DESeq2 transformation abondance
 
@@ -639,7 +649,7 @@ ggplot(abund_sums) +
   facet_grid(type ~ .) +
   xlab("Total abundance within sample")
 ```
-Comparaison des transformations DESeq2 et log(1+x)(transformation facilitée. On observe l'abondance totale des échantillons par l'utilisation des deux méthodes de transformation. Il y a certaines similitudes mais des différences prononcées entre ces deux échantillons. DESeq2 donne plus de résultats pour les abondances moyennes et faibles. Le log écrase les données faible, donc les résultats sont moins flagrants.
+Comparaison des transformations DESeq2 et log(1+x) (transformation facilitée). On observe l'abondance totale des échantillons par l'utilisation des deux méthodes de transformation. Il y a certaines similitudes mais des différences prononcées entre ces deux échantillons. DESeq2 donne plus de résultats pour les abondances moyennes et faibles. Le log écrase les données faible, donc les résultats sont moins flagrants.
 
 
 ```{r}
@@ -662,7 +672,7 @@ summary(hfdr_res)
 ```
 Par l'utilisation du test hiérarchique, nous pouvons corriger la p-value pour permettre d'affiner nos résultats (résultats plus significatifs).
 
-## Show a screenshot of a subtree with many differentially abundant bacteria, as determined by the hierarchical testing procedure.
+## Image d'arbre montrant de nombreuses bactéries avec des abondances différentes.
 
 ```{r}
 plot(hfdr_res, height = 5000)
@@ -679,7 +689,7 @@ tax %>%
   left_join(hfdr_res@p.vals) %>%
   arrange(adjp) %>% head(10)
 ```
-Les bactéries les plus fortement associées sont les Lachnospiraceae, ce qui est cohérent avec les résultats obtenus auparavant avec les fôrets.
+Les bactéries les plus fortement associées sont les Lachnospiraceae, ce qui est cohérent avec les résultats obtenus auparavant avec les forêts.
 
 # Utilisation des multi-tables
 
