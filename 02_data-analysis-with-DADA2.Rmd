@@ -6,9 +6,9 @@ output:
     toc_depth: 2
 ---
 
-#Tutoriel Dada2
+# Tutoriel Dada2
 
-##Importation des librairies et préparation des données
+## Importation des librairies et préparation des données
 
 ```{r}
 library("Rcpp")
@@ -29,7 +29,7 @@ sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
 On sépare les forward et les reverse. Les forward seront associés à fnFS et les reverse à fnRs.
 Association des fnFs et fnRS entre eux (correspondance entre les données)
 
-##Inspection des profils de qualité des reads
+## Inspection des profils de qualité des reads
 
 ```{r}
 plotQualityProfile(fnFs[1:4])
@@ -47,7 +47,7 @@ Affichage du graphe de qualité des données fnRs
 Même codes couleurs que fnFs
 Résultat : les reads reverse sont de moins bonne qualité en particulier vers la fin. Ce n'est pas grave mais les nucléotides à partir de la position 160 seront supprimés (soit 90 nucléotides)
 
-##Filtration et tri des donnnées
+## Filtration et tri des donnnées
 
 ```{r}
 filtFs <- file.path(path, "filtered", paste0(sample.names, "_F_filt.fastq.gz"))
@@ -65,7 +65,7 @@ head(out)
 ```
 Les données sont filtrés, ie que les derniers nucléotides vont être retirés (fnFs : à partir de 240; fnRd : à partir de 160). Seulement 2 erreurs peuvent être acceptées lors de la filtration
 
-##Calcul des erreurs et visualisation de ces derniers
+## Calcul des erreurs et visualisation de ces derniers
 
 ```{r}
 errF <- learnErrors(filtFs, multithread=TRUE)
@@ -86,7 +86,7 @@ Ligne noire : taux d'erreurs estimé après que l'algorithme ait réuni toutes l
 Ligne rouge : taux d'erreurs attendu selon le Q-score
 Corrélation entre les taux d'erreurs estimés et observés, diminution quand le score de qualité augmente -> on peut poursuivre.
 
-##Application de Dada2 aux données
+## Application de Dada2 aux données
 
 ```{r}
 dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
@@ -103,7 +103,7 @@ dadaFs[[1]]
 ```
 Dada2 a déduit 128 séquences variantes à partir des 1979 séquences uniques.
 
-##Alignement des séquences Forward et Reverse
+## Alignement des séquences Forward et Reverse
 
 ```{r}
 mergers <- mergePairs(dadaFs, filtFs, dadaRs, filtRs, verbose=TRUE)
@@ -124,7 +124,7 @@ table(nchar(getSequences(seqtab)))
 ```
 Visualisation de la distribution des longueurs de séquences. Ici, les différentes séquences obtenues sont d'une longueur située dans la région V4 de l'ARN16S
 
-##Elimination des séquences chimériques
+## Elimination des séquences chimériques
 
 ```{r}
 seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
@@ -137,7 +137,7 @@ sum(seqtab.nochim)/sum(seqtab)
 ```
 Ces séquences chimériques représentent 3.5% de notre jeu de donnée
 
-##Résumé des opérations effectuées précédement
+## Résumé des opérations effectuées précédement
 
 ```{r}
 getN <- function(x) sum(getUniques(x))
@@ -149,7 +149,7 @@ head(track)
 ```
 Récapitulatif des reads qui ont traversé les différentes étapes de filtration et de tri.
 
-##Téléchargement des données Silva
+## Téléchargement des données Silva
 
 ```{bash}
 wget https://zenodo.org/record/3986799/files/silva_nr99_v138_train_set.fa.gz
@@ -161,7 +161,7 @@ taxa <- assignTaxonomy(seqtab.nochim, "~/Dada2_Phyloseq_CC1/silva_nr99_v138_trai
 ```
 Assignation des séquences étudiées à la classification. Cette assignation se fait par rapport à une base de séquence de référence ayant une classification connue.
 
-##Téléchargement des données Silva permmetant l'assignement d'espèces aux des séquences analysées
+## Téléchargement des données Silva permmetant l'assignement d'espèces aux des séquences analysées
 
 ```{bash}
 wget https://zenodo.org/record/3986799/files/silva_species_assignment_v138.fa.gz
@@ -180,7 +180,7 @@ head(taxa.print)
 ```
 L'assignation taxonomique donne le tableau ci-dessus. Elle donne jusqu'au genre ce qu'elle a pu identifier des reads à analyser, en les comparant avec les reads contenus dans la banque de Silva. Aucune espèce n'a pu être identifiée à partir des reads.
 
-##Evaluation de la précisison
+## Evaluation de la précisison
 
 ```{r}
 unqs.mock <- seqtab.nochim["Mock",]
@@ -196,9 +196,9 @@ cat("Of those,", sum(match.ref), "were exact matches to the expected reference s
 ```
 Parmi ces 20 échantillons, 20 correspondaient aux séquences de références. Dada2 fonctionne bien.
 
-#Premier pas sur Phyloseq (fin tuto Dada2)
+# Premier pas sur Phyloseq (fin tuto Dada2)
 
-##Importation des librairies et préparation des données
+## Importation des librairies et préparation des données
 
 ```{r}
 library(phyloseq)
@@ -237,14 +237,14 @@ ps
 ```
 Visualisation de l'objet PhyloSeq
 
-##Visualisation de l'alpha diversité
+## Visualisation de l'alpha diversité
 
 ```{r}
 plot_richness(ps, x="Day", measures=c("Shannon", "Simpson"), color="When")
 ```
 Pas de grandes différences entre les échantillons contenus dans prélévements "early" (entre eux) et les prélévemnts "late" (entre aux aussi). Au fil des jours, la diversité n'a pas variée énormement.
 
-##Ordination
+## Ordination
 
 ```{r}
 ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
