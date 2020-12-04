@@ -6,9 +6,9 @@ output:
     toc_depth: 2
 ---
 
-#Tutoriel PhyloSeq
+# Tutoriel PhyloSeq
 
-##Importaion des librairies et installation des packages nécessaire pour le fonctionnement des opérations suivantes
+## Importaion des librairies et installation des packages nécessaire pour le fonctionnement des opérations suivantes
 
 ```{r}
 library("knitr")
@@ -26,23 +26,22 @@ if(any(!.inst)) {
    source("http://bioconductor.org/biocLite.R")
    biocLite(.bioc_packages[!.inst], ask = F)
 }
-# Load packages into session, and print package version
 sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
 ```
 Chargement des différents packages nécessaires pour le travail sur PhyloSeq
 NB : les packages sont laissés ici pour éviter les mauvaises surprises (packages introuvables...)
 
 
-##Importation des données
+## Importation des données
 
 ```{r}
 ps_connect <-url("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/ps.rds")
 ps = readRDS(ps_connect)
 ps
 ```
-On importe les données déjà traitées par dada2. Ce ne sont pas les données du fichier 02.
+On importe les données déjà traitées par dada2. Ce ne sont pas les données du fichier 02 avec Dada2.
 
-##Filtration taxonomique
+## Filtration taxonomique
 
 ```{r}
 rank_names(ps)
@@ -89,7 +88,7 @@ ps1
 ```
 On filtre les données, ie qu'on retire les phylums que l'on a décrit juste avant.
 
-##Filtre des prévalences
+## Filtration des prévalences
 
 ```{r}
 prevdf1 = subset(prevdf, Phylum %in% get_taxa_unique(ps1, "Phylum"))
@@ -114,7 +113,7 @@ ps2 = prune_taxa(keepTaxa, ps)
 ```
 On applique le seuil de prévalence de 5%, retirant les 18 taxons se trouvant en dessous de cette limite. ps2 regroupe les taxons après ce filtrage.
 
-##Agglomération des taxons
+## Agglomération des taxons
  
 ```{r}
 length(get_taxa_unique(ps2, taxonomic.rank = "Genus"))
@@ -129,9 +128,9 @@ On applique à ps3, l'agglomération des genres venant de ps2. Toutes les caract
 h1 = 0.4
 ps4 = tip_glom(ps2, h = h1)
 ```
-h1 représente la hauteur d'arbre qui définit la distance phylogénétique entre les différentes caractéristiques. On applique à ps4 cette distance phylogénétique. A la différence de ps2, on s'intéresses ici à une agglomération sans prendre en compte la taxonomie, donc une agglomération phylogénétique.
+h1 représente la hauteur d'arbre qui définit la distance phylogénétique entre les différentes caractéristiques. On applique à ps4 cette distance phylogénétique. A la différence de ps2, on s'intéresse ici à une agglomération sans prendre en compte la taxonomie, donc une agglomération phylogénétique.
 
-##Comparaison données non filtrées, agglomération taxonomique et agglomération phylogénique
+## Comparaison données non filtrées, agglomération taxonomique et agglomération phylogénique
 
 ```{r}
 multiPlotTitleTextSize = 15
@@ -146,21 +145,20 @@ p4tree = plot_tree(ps4, method = "treeonly",
                    ladderize = "left", title = "By Height") +
   theme(plot.title = element_text(size = multiPlotTitleTextSize))
 ```
-On stocke les données préparées auapravant dans les ptree qui leurs associées pour pouvoir obtenir un graphe permettant de les comparer entre eux.
+On stocke les données préparées auapravant dans les ptree qui leurs sont associées pour pouvoir obtenir un graphe permettant de les comparer entre eux.
 
-##Group plots together (différents type d'agglo)
+## Group plots together (différents type d'agglo)
 
 ```{r}
 gridExtra::grid.arrange(nrow = 1, p2tree, p3tree, p4tree)
 ```
-On peut que l'agglomération par genre et par la distance phylogénétique améliore la lisibilité des données. On a un meilleur aperçu de la répartition des échantillons.
+On peut voir que l'agglomération par genre et par la distance phylogénétique améliore la lisibilité des données. On a un meilleur aperçu de la répartition des communautés présents dans les échantillons.
 
-##Transformation des valeurs d'abondance
+## Transformation des valeurs d'abondance
 
 ```{r}
 plot_abundance = function(physeq,title = "",
                           Facet = "Order", Color = "Phylum"){
-  # Arbitrary subset, based on Phylum, for plotting
   p1f = subset_taxa(physeq, Phylum %in% c("Firmicutes"))
   mphyseq = psmelt(p1f)
   mphyseq <- subset(mphyseq, Abundance > 0)
@@ -173,29 +171,26 @@ plot_abundance = function(physeq,title = "",
     theme(legend.position="none")
 }
 ```
-Tout d'abord, on définit une fonction qui va utiliser phyloseq pour définir un graphique d'abondance relative. Cela va nous permettra de comparer ces valeurs avec les abondances dans leur échelle et leur distribution.
+Tout d'abord, on définit une fonction qui va utiliser phyloseq pour définir un graphique d'abondance relative. Cela va nous permettre de comparer ces valeurs avec les abondances dans leur échelle et leur distribution.
 
 ```{r}
-# Transform to relative abundance. Save as new object.
 ps3ra = transform_sample_counts(ps3, function(x){x / sum(x)})
 ```
 Transformation des données en abondane relative
 
 ```{r}
-#Affiche abondance avant et après la mise en "relative"
 plotBefore = plot_abundance(ps3,"")
 plotAfter = plot_abundance(ps3ra,"")
 ```
-On affecte ps3 (avant transformation) et ps3ra (après transformation ne abondance relative) à deux datas
+On affecte ps3 (avant transformation) et ps3ra (après transformation en abondance relative) à deux datas plot
 
 ```{r}
-# Combine each plot into one graphic.
 gridExtra::grid.arrange(nrow = 2,  plotBefore, plotAfter)
 ```
-Affichage des graphes avant et après transformations. En haut, nous avons les graphes d'abondances originales et en bas les graphes d'abondances relatives. On peut voir des similutes entre les deux sexes, notamment pour Erysipelotrichales et Lactobacillales. On observe chez ces derniers, deux endroits sur le graphe où on oberve plusieurs taxons (élargissement des figures).
+Affichage des graphes avant et après transformations. En haut, nous avons les graphes d'abondances originales et en bas les graphes d'abondances relatives. On peut voir des similitudes entre les deux sexes, notamment pour Erysipelotrichales et Lactobacillales. On observe chez ces derniers, deux endroits sur le graphe où on oberve plusieurs taxons (élargissement des figures).
 En observant l'abondance relative, on peut voir une abondance plus importante que les abondances originalles (soit absolue). Ces abondances relatives sont obtenus en divisant le nombre de fois que les taxons sont observés dans l'ensemble de tous les taxons. Ces valeurs doivent être interprétées avec attention. Par exemple, si la population augmente mais que la population ne bouge pas, son abondance relative diminue. Cette abondance sert plutôt à donner un aperçu de la diversité de la communauté.
 
-##Taxonomie des sous-ensembles
+## Taxonomie des sous-ensembles
 
 ```{r}
 psOrd = subset_taxa(ps3ra, Order == "Lactobacillales")
@@ -203,21 +198,21 @@ plot_abundance(psOrd, Facet = "Genus", Color = NULL)
 ```
 On s'est demandé ce qui pouvait expliquer l'abondance de plusieurs en taxons au deux endroits du graphe. On examine par ce code les sous-ensembles des Lactobacillales. On observe des Lactobacillus et Streptococcus, deux familles de bactéries qui prédominent chez Lactobacillales dans ces échantillons. On observe une plus grande abondance des Lactobacillus que de Streptococcus.
 
-##Prétraitement des données
+## Prétraitement des données
 
 ```{r}
 qplot(sample_data(ps)$age, geom = "histogram",binwidth=20) + xlab("age")
 ```
 Il s'agit d'un histogramme montrant le nombre de souris en fonction de leur âge (en jours). On observe 3 pics où les âges sont différents : jeune, moyen at âgé
 
-#Histograms comparing raw and log transformed read depths
+## Histograms comparing raw and log transformed read depths
 ```{r}
 qplot(log10(rowSums(otu_table(ps))),binwidth=0.2) +
   xlab("Logged counts-per-sample")
 ```
 Sur ce graph, on compare les reads brutes et les reads en log. Cela permet de déterminer quel log employer pour permettre d'affiner les résultats pour la PCoa.
 
-##Analyse d'ordination avec l'abondance de log
+## Analyse d'ordination avec l'abondance de log
 ```{r}
 sample_data(ps)$age_binned <- cut(sample_data(ps)$age,
                           breaks = c(0, 100, 200, 400))
@@ -232,7 +227,7 @@ plot_ordination(pslog, out.wuf.log, color = "age_binned") +
 ```
 On effectue une PCoA en utilisant Bray-Curtis pour mesurer la dissimilarité entre les échantillons. On observe que la majeure partie des souris ne présentent pas de différence avec leur âge. Cependant, certaines valeurs sont aberrantes (2 femelles et 4 mâles), il faut donc les retirer.
 
-#Montrer la dominance d'un seul ASV chez les souris aberrantes
+## Montrer la dominance d'un seul ASV chez les souris aberrantes
 ```{r}
 rel_abund <- t(apply(otu_table(ps), 1, function(x) x / sum(x)))
 qplot(rel_abund[, 12], geom = "histogram",binwidth=0.05) +
@@ -240,7 +235,7 @@ qplot(rel_abund[, 12], geom = "histogram",binwidth=0.05) +
 ```
 En analysant les 2 souris femelles aberrantes, il a été constaté qu'un ASV prédominait (90%) par rapport aux autres. Chez les autres souris, cet ASV repésente moins de 20%. Le fait de retirer ces souris vont permettre de donner des résultats plus fiables pour la suite.
 
-##Différentes projections d'ordinations
+# Différentes projections d'ordinations
 
 ```{r}
 outliers <- c("F5D165", "F6D165", "M3D175", "M4D175", "M5D175", "M6D175")
@@ -251,7 +246,7 @@ On affecte les valeurs aberrantes à "outliers". On indique à ps les valeurs ab
 ```{r}
 which(!rowSums(otu_table(ps)) > 1000)
 ```
-Echantillons ayant moins de 1000 reads
+Prélévements où il y a dse échantillons avec moins de 1000 reads.
 
 ```{r}
 ps <- prune_samples(rowSums(otu_table(ps)) > 1000, ps)
@@ -259,7 +254,7 @@ pslog <- transform_sample_counts(ps, function(x) log(1 + x))
 ```
 On retire à ps les échantillons ayant moins de 1000 reads et on transforme les données avec log(x+1) pour affiner les résultats
 
-##PCoA Bray-Curtis entre échantillons
+## PCoA Bray-Curtis entre échantillons
 ```{r}
 out.pcoa.log <- ordinate(pslog,  method = "MDS", distance = "bray")
 evals <- out.pcoa.log$values[,1]
@@ -270,7 +265,7 @@ plot_ordination(pslog, out.pcoa.log, color = "age_binned",
 ```
 On observe une forte dissimilarité entre les jeunes souris et les souris moyennes, qu'elles soient de sexe mâle ou femelle et provenant de deux litières différentes. L'âge a une influence sur la communauté microbienne au sein des souris.
 
-#DPCoA : nouvelles informations phylogénétique (double) Visualisation des échantillons et catégories taxonomiques
+## DPCoA : nouvelles informations phylogénétique (double) Visualisation des échantillons et catégories taxonomiques
 ```{r}
 out.dpcoa.log <- ordinate(pslog, method = "DPCoA")
 evals <- out.dpcoa.log$eig
@@ -281,14 +276,14 @@ plot_ordination(pslog, out.dpcoa.log, color = "age_binned", label= "SampleID",
 ```
 Cette DPCoa ajoute des informations phylogénétiques aux données. Sur l'axe 1, on observe une variabilité de 75% tandis que sur l'axe 2, on observe une variabilité de 8,5%. L'axe 2  montre les différences entre les jeunes souris des souris d'âge moyen, comme précédemment. Les données phylogénétiques associées aux souris montrent que les taxons Firmicutes ont une forte abondance chez ces souris, analyses confirmées par le graphe suivant.
 
-##Taxon responsable de l'axe 1 et 2
+## Taxon responsable de l'axe 1 et 2
 ```{r}
 plot_ordination(pslog, out.dpcoa.log, type = "species", color = "Phylum") +
   coord_fixed(sqrt(evals[2] / evals[1]))
 ```
 Confirmation de la prédominance des Firmicutes.
 
-##Positions des échantillons produits par PCoA utilisant weighted UniFrac
+## Positions des échantillons produits par PCoA utilisant weighted UniFrac
 ```{r}
 out.wuf.log <- ordinate(pslog, method = "PCoA", distance ="wunifrac")
 evals <- out.wuf.log$values$Eigenvalues
@@ -299,9 +294,8 @@ plot_ordination(pslog, out.wuf.log, color = "age_binned",
 ```
 On utilise l'UniFrac pondére pour examiner les résultats donnés par la PCoA. On peut voir selon l'axe 2, une différence entre les souris d'âge différent, confirmant la PCoA. Mais la DPCoA a apporté plus d'informations sur le deuxième axe que n'offre l'UniFrac.
 
-#Why are the ordination plots so far from square?
 
-##Analyse en Composantes Principales sur les rangs
+## Analyse en Composantes Principales sur les rangs
 ```{r}
 abund <- otu_table(pslog)
 abund_ranks <- t(apply(abund, 1, rank))
@@ -314,7 +308,7 @@ abund_ranks[abund_ranks < 1] <- 1
 ```
 Certains bactéries sont absentes ou ont une très faible abondance dans les échantillons (ils peuvent être dans certains échantillons mais absents dans d'autres). On pose un seuil au niveau des rangs et toutes les bactéries dont les rangs sont inférieurs au seuil seront attribuées au rang 1.
 
-##Transformation de données PCA (réduit les dimensions)
+## Transformation de données PCA (réduit les dimensions)
 ```{r}
 library(dplyr)
 library(reshape2)
@@ -336,7 +330,7 @@ ggplot(abund_df %>%
 ```
 Après transformation (imposé le seuil des rangs). On observe une varition d'abondance pour de nombreuses bactéries de rang 1. Mais l'abondance augmente continuellement au fur et à mesure que les rangs augmentent, et donc que la taille des bactéries augemente. 
 
-#Donne graphe après troncation de certains rangs
+## Donne graphe après troncation de certains rangs
 ```{r}
 library(ade4)
 ranks_pca <- dudi.pca(abund_ranks, scannf = F, nf = 3)
@@ -371,7 +365,7 @@ ggplot() +
 ```
 On a effectuer une Analyse en Composantes Principales (ACP). Ici, aucune transformation n'a été faite. On observe une similitude avec la PCoA, notamment des différences en fonction de l'âge avec l'axe 2 et une grande dissimilarité des bactéries avec l'axe 1. L'analyse des données de départ ont bien été réalisée.
 
-##Cannonical correspondance (CCpnA) : ordination d'espèces par table d'échantillons > ajoute infos supplémentaires
+## Cannonical correspondance (CCpnA) : ordination d'espèces par table d'échantillons > ajoute infos supplémentaires
 
 ```{r}
 ps_ccpna <- ordinate(pslog, "CCA", formula = pslog ~ age_binned + family_relationship)
@@ -407,13 +401,12 @@ ggplot() +
 ```
 Ce code ne fonctionne pas car il est sensé utiliser les données du site d'où proviennent les données. On est supposé avoir deux graphiques : le premier concernant la portée 1, et le second, la portée 2. On aurait visualiser les quatre taxons les plus abondants parmi les 23 présents. On aurait également vu sur le premier graphique une nette différence entre les souris jeunes et plus âgées sur l'axe des ordonnées.
 
-##Supervisation de l'apprentissage
+# Supervisation de l'apprentissage
 
 ```{r}
 library(caret)
 sample_data(pslog)$age2 <- cut(sample_data(pslog)$age, c(0, 100, 400))
 dataMatrix <- data.frame(age = sample_data(pslog)$age2, otu_table(pslog))
-# take 8 mice at random to be the training set, and the remaining 4 the test set
 trainingMice <- sample(unique(sample_data(pslog)$host_subject_id), size = 8)
 inTrain <- which(sample_data(pslog)$host_subject_id %in% trainingMice)
 training <- dataMatrix[inTrain,]
@@ -423,14 +416,14 @@ plsFit <- train(age ~ ., data = training,
 ```
 On divise les données pour former des ensembles dits de formations et de tests, en faisant des affectations par souris plutôt que par échantillons.
 
-##Prédiction de l'âge des souris
+## Prédiction de l'âge des souris
 ```{r}
 plsClasses <- predict(plsFit, newdata = testing)
 table(plsClasses, testing$age)
 ```
 Prédiction de l'âge des souris (en jours). La prédiction est très bien faite si on le compare aux données précédement faites. 63 souris ont etre 0 et 100 jours, et 4 souris ont 100 jours (cf bornes des intervalles).
 
-##Prédiction de l'âge de fôret aléatoire
+## Prédiction de l'âge de fôret aléatoire
 ```{r}
 library(randomForest)
 rfFit <- train(age ~ ., data = training, method = "rf",
@@ -440,7 +433,7 @@ table(rfClasses, testing$age)
 ```
 Autre exemple de classification selon l'âge (en années) des arbres.
 
-##Différentes bactéries en fonction de l'âge
+## Différentes bactéries en fonction de l'âge
 
 ```{r}
 library(vegan)
@@ -473,7 +466,7 @@ ggplot() +
 ```
 Par l'utilisation de ce graphique, on différencie les bactéries retrouvées chez les souris en fonction de leur âge. Les axes restent les mêmes que la PCoA mais la variabilité de l'âge est utilisée comme référence.
 
-#How frequently sample occur in the same tree partition in the random forest’s bootstrapping procedure
+## How frequently sample occur in the same tree partition in the random forest’s bootstrapping procedure
 ```{r}
 rf_prox <- cmdscale(1 - rfFit$finalModel$proximity) %>%
   data.frame(sample_data(pslog)[inTrain, ])
@@ -491,7 +484,7 @@ as.vector(tax_table(ps)[which.max(importance(rfFit$finalModel)), c("Family", "Ge
 ```
 On identifie la bactérie qui a le plus d'influence lors de la prédiction des fôrets aléatoires. 
 
-##Abondance discriminative des bactéries dans des échantillons d'arbres à des âges différents
+## Abondance discriminative des bactéries dans des échantillons d'arbres à des âges différents
 ```{r}
 impOtu <- as.vector(otu_table(pslog)[,which.max(importance(rfFit$finalModel))])
 maxImpDF <- data.frame(sample_data(pslog), abund = impOtu)
@@ -501,9 +494,9 @@ ggplot(maxImpDF) +   geom_histogram(aes(x = abund)) +
 ```
 On montre l'abondance du Lachnospiraceae dans nos échantillons. On peut voir un pic chez les jeunes mais il n'est pas uniformément répartie entre les autres fôrets. Pour les plus âgées, cette bactérie est retrouvée plus souvent.
 
-#Analyses graphiques
+# Analyses graphiques
 
-##Création et traçage des graphiques : où viennent les souris, de quel échantillon...
+## Création et traçage des graphiques : où viennent les souris, de quel échantillon...
 
 ```{r}
 library("phyloseqGraphTest")
@@ -523,7 +516,7 @@ ggplot(net_graph, aes(x = x, y = y, xend = xend, yend = yend), layout = "fruchte
 ```
 On trace un graphique en réseau avec un seuil de dissimilarité de Jaccard de 0.35. La forme des points indique de quelles portées viennent les souris et la couleur montre la provenance de l'échantillon. Il y a des regroupements des échantillons par souris et par portées.
 
-##Graphiques basées sur le test de deux échantillons : Minimum Spanning Tree (MST)
+## Graphiques basées sur le test de deux échantillons : Minimum Spanning Tree (MST)
 ```{r}
 gt <- graph_perm_test(ps, "family_relationship", grouping = "host_subject_id",
                       distance = "jaccard", type = "mst")
@@ -540,7 +533,8 @@ grid.arrange(ncol = 2,  plotNet1, plotPerm1)
 On peut voir que les échantillons se regroupent plus par portée que l'on pouvait imaginé au début. Il y a une bonne similarité entre les souris venant d'une même portée.
 
 
-##Nearest neighbors : if a pair of samples has an edge between them in the nearest neighbor graph, they are overwhelmingly likely to be in the same litter
+## Nearest neighbors : if a pair of samples has an edge between them in the nearest neighbor graph, they are overwhelmingly likely to be in the same litter
+
 ```{r}
 gt <- graph_perm_test(ps, "family_relationship", grouping = "host_subject_id",
                       distance = "jaccard", type = "knn", knn = 1)
@@ -551,7 +545,8 @@ grid.arrange(ncol = 2,  plotNet2, plotPerm2)
 ```
 Les graphiques montrent que les paires d'échantillons ayant un lien entre eux, il est fort probable qu'ils viennent d'une même portée.
 
-##Modélisation linéaire: Diversité de Shannon associé à chaque échantillon et joint avec annotation de l'échantillon
+## Modélisation linéaire: Diversité de Shannon associé à chaque échantillon et joint avec annotation de l'échantillon
+
 ```{r}
 library("nlme")
 library("reshape2")
@@ -566,7 +561,6 @@ ps_samp <- sample_data(ps) %>%
        variable.name = "diversity_measure",
        value.name = "alpha_diversity")
 
-# reorder's facet from lowest to highest diversity
 diversity_means <- ps_samp %>%
   group_by(host_subject_id) %>%
   summarise(mean_div = mean(alpha_diversity)) %>%
@@ -585,7 +579,6 @@ X <- model.matrix(eval(eval(alpha_div_model$call$fixed)[-2]),
 pred_var_fixed <- diag(X %*% alpha_div_model$varFix %*% t(X))
 new_data$pred_var <- pred_var_fixed + alpha_div_model$sigma ^ 2
 
-# fitted values, with error bars
 ggplot(ps_samp %>% left_join(new_data)) +
   geom_errorbar(aes(x = age_binned, ymin = pred - 2 * sqrt(pred_var),
                     ymax = pred + 2 * sqrt(pred_var)),
@@ -603,18 +596,17 @@ ggplot(ps_samp %>% left_join(new_data)) +
 ```
 Sur ces graphiques, on observe la diversité, la richesse, des échantillons dans les différentes portées et chez les souris dont l'âge est différents. Pour M004, on observe une grande diversité chez les souris d'âge jeune et moyen mais une diversité très faible chez les souris âgées. On peut voir également que certains échantillons ne sont présents que dans une seule portée spécifique.
 
-##Hiéarchisation des tests multiples
+## Hiéarchisation des tests multiples
+
 ```{r}
 library("reshape2")
 library("DESeq2")
-#New version of DESeq2 needs special levels
 sample_data(ps)$age_binned <- cut(sample_data(ps)$age,
                           breaks = c(0, 100, 200, 400))
 levels(sample_data(ps)$age_binned) <- list(Young100="(0,100]", Mid100to200="(100,200]", Old200="(200,400]")
 sample_data(ps)$family_relationship = gsub(" ", "", sample_data(ps)$family_relationship)
 ps_dds <- phyloseq_to_deseq2(ps, design = ~ age_binned + family_relationship)
 
-# geometric mean, set to zero when all coordinates are zero
 geo_mean_protected <- function(x) {
   if (all(x == 0)) {
     return (0)
@@ -629,7 +621,8 @@ abund <- getVarianceStabilizedData(ps_dds)
 ```
 
 
-##DESeq2 transformation abondance
+## DESeq2 transformation abondance
+
 ```{r}
 short_names <- substr(rownames(abund), 1, 5)%>%
   make.names(unique = TRUE)
@@ -659,16 +652,18 @@ el[, 1] <- el_names[el0[, 1]]
 el[, 2] <- el_names[as.numeric(el0[, 2])]
 unadj_p <- treePValues(el, abund, sample_data(pslog)$age_binned)
 ```
+Utilisation des tests Univariés sur chaque groupes taxonomiques, permettant une hiérarchisation.
 
+## Correction p-value
 
-##Correction p-value
 ```{r}
 hfdr_res <- hFDR.adjust(unadj_p, el, .75)
 summary(hfdr_res)
 ```
 Par l'utilisation du test hiérarchique, nous pouvons corriger la p-value pour permettre d'affiner nos résultats (résultats plus significatifs).
 
-##Show a screenshot of a subtree with many differentially abundant bacteria, as determined by the hierarchical testing procedure.
+## Show a screenshot of a subtree with many differentially abundant bacteria, as determined by the hierarchical testing procedure.
+
 ```{r}
 plot(hfdr_res, height = 5000)
 ```
@@ -686,7 +681,8 @@ tax %>%
 ```
 Les bactéries les plus fortement associées sont les Lachnospiraceae, ce qui est cohérent avec les résultats obtenus auparavant avec les fôrets.
 
-##Utilisation de multi-tables
+# Utilisation des multi-tables
+
 ```{r}
 metab <- read.csv("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/metabolites.csv",row.names = 1)
 microbe_connect <-url("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/microbe.rda")
@@ -707,6 +703,7 @@ X[X > 50] <- 50
 dim(X)
 ```
 On filtre les données en ne gardant que les microbes (X) et les métabolites d'intêrets (metab). On observe pour X, 174 lignes (ce sont les microbes) et 12 colonnes (qui correspondent aux échantillons)
+
 ```{r}
 dim(metab)
 ```
