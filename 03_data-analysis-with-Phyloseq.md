@@ -46,8 +46,8 @@
         supplémentaires](#cannonical-correspondance-ccpna-ordination-despèces-par-table-déchantillons-ajoute-infos-supplémentaires)
   - [Supervisation de l’apprentissage](#supervisation-de-lapprentissage)
       - [Prédiction de l’âge des souris](#prédiction-de-lâge-des-souris)
-      - [Prédiction de l’âge de fôret
-        aléatoire](#prédiction-de-lâge-de-fôret-aléatoire)
+      - [Prédiction de l’âge de forêt
+        aléatoire](#prédiction-de-lâge-de-forêt-aléatoire)
       - [Différentes bactéries en fonction de
         l’âge](#différentes-bactéries-en-fonction-de-lâge)
       - [How frequently sample occur in the same tree partition in the
@@ -75,9 +75,9 @@
       - [DESeq2 transformation
         abondance](#deseq2-transformation-abondance)
       - [Correction p-value](#correction-p-value)
-      - [Show a screenshot of a subtree with many differentially
-        abundant bacteria, as determined by the hierarchical testing
-        procedure.](#show-a-screenshot-of-a-subtree-with-many-differentially-abundant-bacteria-as-determined-by-the-hierarchical-testing-procedure.)
+      - [Image d’arbre montrant de nombreuses bactéries avec des
+        abondances
+        différentes.](#image-darbre-montrant-de-nombreuses-bactéries-avec-des-abondances-différentes.)
   - [Utilisation des multi-tables](#utilisation-des-multi-tables)
 
 # Tutoriel PhyloSeq
@@ -245,7 +245,7 @@ ps <- subset_taxa(ps, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
 ```
 
 On retire les phylums dits ambigues, ie que ce sont peut-être des
-artefacts Ils peuvent influencer sur la suite des oprétaions donc ils
+artefacts Ils peuvent influencer sur la suite des opérations donc ils
 doivent être retirés
 
 ``` r
@@ -256,7 +256,7 @@ prevdf = apply(X = otu_table(ps),
 
 On détermine la prévalence, ie le nombre de fois où un échantillon est
 au moins une fois présent dans un des taxons. Pour cette ligne de code,
-on détermine leur prévalence dans les phylums
+on détermine leur prévalence dans les phylums.
 
 ``` r
 prevdf = data.frame(Prevalence = prevdf,
@@ -283,12 +283,12 @@ plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$P
     ## 9                  Tenericutes 234.00000   234
     ## 10             Verrucomicrobia 104.00000   104
 
-Ici, on calcul la prévalence totale (colonne 2) et prévalence moyenne
-(colonne 1) de chaque échantillon dans chacun des phylums. Par exemple,
-pour Fusobacteria, le total et la moyenne sont égaux, ie qu’il est deux
-fois dans le même échantillon. Pour Proteobacteria, on en dénombre 650.
-Si on divise par la prévalence moyenne, on obtient environ 11. Il est
-donc présent dans 11 échantillons différents.
+Ici, on calcule la prévalence totale (colonne 2) et la prévalence
+moyenne (colonne 1) de chaque échantillon dans chacun des phylums. Par
+exemple, pour Fusobacteria, le total et la moyenne sont égaux, ie qu’il
+est deux fois dans le même échantillon. Pour Proteobacteria, on en
+dénombre 650. Si on divise par la prévalence moyenne, on obtient
+environ 11. Il est donc présent dans 11 échantillons différents.
 
 ``` r
 filterPhyla = c("Fusobacteria", "Deinococcus-Thermus")
@@ -321,11 +321,11 @@ ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(ps),color=Phylum)) +
 ```
 
 ![](03_data-analysis-with-Phyloseq_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
-Graphe représentant la prévalence des taxons en fonction de l’abondance
+Graphes représentant la prévalence des taxons en fonction de l’abondance
 totale (cela permet de mettre en évidence des valeurs aberrantes qui
 doivent être supprimées). Un point représente un taxon. Certains taxons
 sont plus présents que d’autres (cf Firmicutes). Il convient de poser un
-seuil de prévalence car la mjorité des taxons sont supérieurs à 10%
+seuil de prévalence car la majorité des taxons sont supérieurs à 10%.
 
 ``` r
 prevalenceThreshold = 0.05 * nsamples(ps)
@@ -334,9 +334,9 @@ prevalenceThreshold
 
     ## [1] 18
 
-On pose un seuil de prévalence à 5%. Les taxons qui se trouvaient en
-dessous de ce seuil ont été enlevés. 18 taxons vont être retirés lors de
-l’application du seuil de prévalence.
+On pose un seuil de prévalence à 5%. Les taxons qui se trouvent en
+dessous de ce seuil vont être enlevés. 18 taxons vont être retirés lors
+de l’application du seuil de prévalence.
 
 ``` r
 keepTaxa = rownames(prevdf1)[(prevdf1$Prevalence >= prevalenceThreshold)]
@@ -434,7 +434,7 @@ distribution.
 ps3ra = transform_sample_counts(ps3, function(x){x / sum(x)})
 ```
 
-Transformation des données en abondane relative
+Transformation des données en abondance relative
 
 ``` r
 plotBefore = plot_abundance(ps3,"")
@@ -499,7 +499,7 @@ qplot(log10(rowSums(otu_table(ps))),binwidth=0.2) +
 ![](03_data-analysis-with-Phyloseq_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 Sur ce graph, on compare les reads brutes et les reads en log. Cela
 permet de déterminer quel log employer pour permettre d’affiner les
-résultats pour la PCoa.
+résultats pour la PCoA.
 
 ## Analyse d’ordination avec l’abondance de log
 
@@ -513,7 +513,7 @@ out.wuf.log <- ordinate(pslog, method = "MDS", distance = "wunifrac")
 ```
 
     ## Warning in UniFrac(physeq, weighted = TRUE, ...): Randomly assigning root as --
-    ## GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGCGTGTAGGCGGGCATGCAAGCCAGAAGTGAAATCTGGGGGCTTAACCCCCAAACTGCTTTTGGAACTGCGTGTCTTGAGTGATGGAGAGGCAGGCGGAATTCCCAGTGTAGCGGTGAAATGCGTAGATATTGGGAGGAACACCAGTGGCGAAGGCGACCTGCTGGACATTAACTGACGCTGAGGCGCGAAAGCGTGGGGAG
+    ## GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGCAGCGCAAGTCTGGAGTGAAATGCCGGGGCCCAACCCCGGAACTGCTTTGGAAACTGTGCAGCTCGAGTGCAGGAGAGGTAAGCGGAATTCCTAGTGTAGCGGTGAAATGCGTAGATATTAGGAGGAACACCAGTGGCGAAGGCGGCTTACTGGACTGTAACTGACGTTGAGGCTCGAAAGCGTGGGGAG
     ## -- in the phylogenetic tree in the data you provided.
 
 ``` r
@@ -526,7 +526,7 @@ plot_ordination(pslog, out.wuf.log, color = "age_binned") +
 ![](03_data-analysis-with-Phyloseq_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 On effectue une PCoA en utilisant Bray-Curtis pour mesurer la
 dissimilarité entre les échantillons. On observe que la majeure partie
-des souris ne présentent pas de différence avec leur âge. Cependant,
+des souris ne présente pas de différence avec leur âge. Cependant,
 certaines valeurs sont aberrantes (2 femelles et 4 mâles), il faut donc
 les retirer.
 
@@ -541,7 +541,7 @@ qplot(rel_abund[, 12], geom = "histogram",binwidth=0.05) +
 ![](03_data-analysis-with-Phyloseq_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 En analysant les 2 souris femelles aberrantes, il a été constaté qu’un
 ASV prédominait (90%) par rapport aux autres. Chez les autres souris,
-cet ASV repésente moins de 20%. Le fait de retirer ces souris vont
+cet ASV repésente moins de 20%. Le fait de retirer ces souris va
 permettre de donner des résultats plus fiables pour la suite.
 
 # Différentes projections d’ordinations
@@ -625,7 +625,7 @@ out.wuf.log <- ordinate(pslog, method = "PCoA", distance ="wunifrac")
 ```
 
     ## Warning in UniFrac(physeq, weighted = TRUE, ...): Randomly assigning root as --
-    ## GCAAGCGTTATCCGGAATGATTGGGCGTAAAGGGTGCGCAGGCGGAACCATAAGTCTGAAGTAAAAGCCATCGGCTCAACCGATGTAAGCTTTGGAAACTGTGGATCTAGAGTGCAGGAGAGGACAGTGGAATTCCATGTGTAGCGGTAAAATGCGTAGATATATGGAGGAACACCAGTGGCGAAGGCGGCTGTCTGGCCTGTAACTGACGCTGAGGCACGAAAGCGTGGGGAGC
+    ## GCAAGCGTTATCCGGATTTACTGGGTGTAAAGGGAGCGTAGACGGCAGCGCAAGTCCGAAGTGAAAGCCCGGGGCCCAACCCCGGGACTGCTTTGGAAACTGTGAAGCTGGAGTGCGGGAGGGGCAGGCGGAATTCCTGGTGTAGCGGTGAAATGCGTAGATATCAGGAGGAACACCGGCGGCGAAGGCGGCCTGCTGGACCGTAACTGACGTTGAGGCTCGAAAGCGTGGGGAG
     ## -- in the phylogenetic tree in the data you provided.
 
 ``` r
@@ -637,7 +637,7 @@ plot_ordination(pslog, out.wuf.log, color = "age_binned",
 ```
 
 ![](03_data-analysis-with-Phyloseq_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
-On utilise l’UniFrac pondére pour examiner les résultats donnés par la
+On utilise l’UniFrac pondérée pour examiner les résultats donnés par la
 PCoA. On peut voir selon l’axe 2, une différence entre les souris d’âge
 différent, confirmant la PCoA. Mais la DPCoA a apporté plus
 d’informations sur le deuxième axe que n’offre l’UniFrac.
@@ -736,7 +736,7 @@ ggplot(abund_df %>%
 
 ![](03_data-analysis-with-Phyloseq_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
 Après transformation (imposé le seuil des rangs). On observe une
-varition d’abondance pour de nombreuses bactéries de rang 1. Mais
+variation d’abondance pour de nombreuses bactéries de rang 1. Mais
 l’abondance augmente continuellement au fur et à mesure que les rangs
 augmentent, et donc que la taille des bactéries augemente.
 
@@ -816,9 +816,9 @@ de départ ont bien été réalisée.
 ps_ccpna <- ordinate(pslog, "CCA", formula = pslog ~ age_binned + family_relationship)
 ```
 
-On va effectuer une CCpna. Pour cela, il est nécessaire d’ajouter des un
+On va effectuer une CCpna. Pour cela, il est nécessaire d’ajouter un
 argument, précisant quelles caractéristiques à prendre en compte. Sinon,
-on peut utilise toutes les données par défaut.
+on peut utiliser toutes les données par défaut.
 
 ``` r
 library(ggrepel)
@@ -862,12 +862,11 @@ ggplot() +
 ```
 
 ![](03_data-analysis-with-Phyloseq_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
-Ce code ne fonctionne pas car il est sensé utiliser les données du site
-d’où proviennent les données. On est supposé avoir deux graphiques : le
-premier concernant la portée 1, et le second, la portée 2. On aurait
-visualiser les quatre taxons les plus abondants parmi les 23 présents.
-On aurait également vu sur le premier graphique une nette différence
-entre les souris jeunes et plus âgées sur l’axe des ordonnées.
+On a deux graphiques : le premier concernant la portée 1, et le second,
+la portée 2. On visualise les quatres taxons les plus abondants parmi
+les 23 présents. On voit également sur le premier graphique une nette
+différence entre les souris jeunes et plus âgées sur l’axe des
+ordonnées.
 
 # Supervisation de l’apprentissage
 
@@ -901,15 +900,15 @@ table(plsClasses, testing$age)
 
     ##            
     ## plsClasses  (0,100] (100,400]
-    ##   (0,100]        69         1
-    ##   (100,400]       4        45
+    ##   (0,100]        69         0
+    ##   (100,400]       4        46
 
 Prédiction de l’âge des souris (en jours). La prédiction est très bien
 faite si on le compare aux données précédement faites. 63 souris ont
-etre 0 et 100 jours, et 4 souris ont 100 jours (cf bornes des
+entre 0 et 100 jours, et 4 souris ont 100 jours (cf bornes des
 intervalles).
 
-## Prédiction de l’âge de fôret aléatoire
+## Prédiction de l’âge de forêt aléatoire
 
 ``` r
 library(randomForest)
@@ -947,10 +946,10 @@ table(rfClasses, testing$age)
 
     ##            
     ## rfClasses   (0,100] (100,400]
-    ##   (0,100]        73         3
-    ##   (100,400]       0        43
+    ##   (0,100]        72         1
+    ##   (100,400]       1        45
 
-Autre exemple de classification selon l’âge (en années) des arbres.
+Autre exemple de classification selon l’âge (en années) des forêts
 
 ## Différentes bactéries en fonction de l’âge
 
@@ -1033,7 +1032,7 @@ jeunes.
 as.vector(tax_table(ps)[which.max(importance(rfFit$finalModel)), c("Family", "Genus")])
 ```
 
-    ## [1] "Erysipelotrichaceae" "Turicibacter"
+    ## [1] "Lachnospiraceae" "Roseburia"
 
 On identifie la bactérie qui a le plus d’influence lors de la prédiction
 des fôrets aléatoires.
@@ -1145,11 +1144,11 @@ gt <- graph_perm_test(ps, "family_relationship", grouping = "host_subject_id",
 gt$pval
 ```
 
-    ## [1] 0.004
+    ## [1] 0.006
 
 Imbrication de la structure. Les données des individus sont regroupées
 et il ne faudrait pas que cela se casse. C’est pourquoi on indique qu’on
-garde cette structure quand on permutera les étiquettes.
+garde cette structure intacte quand on permutera les étiquettes.
 
 ``` r
 plotNet1=plot_test_network(gt) + theme(legend.text = element_text(size = 8),
@@ -1175,8 +1174,8 @@ grid.arrange(ncol = 2,  plotNet2, plotPerm2)
 ```
 
 ![](03_data-analysis-with-Phyloseq_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
-Les graphiques montrent que les paires d’échantillons ayant un lien
-entre eux, il est fort probable qu’ils viennent d’une même portée.
+Les graphiques montrent que les paires d’échantillons qui ont un lien
+entre eux, viennent de la même portée (du moins, c’est très probable)
 
 ## Modélisation linéaire: Diversité de Shannon associé à chaque échantillon et joint avec annotation de l’échantillon
 
@@ -1365,6 +1364,9 @@ ps_dds <- estimateDispersions(ps_dds)
 abund <- getVarianceStabilizedData(ps_dds)
 ```
 
+Code calculant la transformation de la variance. On prépare les données
+pour la hiérarchisation qui viendra après.
+
 ## DESeq2 transformation abondance
 
 ``` r
@@ -1385,8 +1387,8 @@ ggplot(abund_sums) +
 ```
 
 ![](03_data-analysis-with-Phyloseq_files/figure-gfm/unnamed-chunk-54-1.png)<!-- -->
-Comparaison des transformations DESeq2 et log(1+x)(transformation
-facilitée. On observe l’abondance totale des échantillons par
+Comparaison des transformations DESeq2 et log(1+x) (transformation
+facilitée). On observe l’abondance totale des échantillons par
 l’utilisation des deux méthodes de transformation. Il y a certaines
 similitudes mais des différences prononcées entre ces deux échantillons.
 DESeq2 donne plus de résultats pour les abondances moyennes et faibles.
@@ -1439,7 +1441,7 @@ summary(hfdr_res)
 Par l’utilisation du test hiérarchique, nous pouvons corriger la p-value
 pour permettre d’affiner nos résultats (résultats plus significatifs).
 
-## Show a screenshot of a subtree with many differentially abundant bacteria, as determined by the hierarchical testing procedure.
+## Image d’arbre montrant de nombreuses bactéries avec des abondances différentes.
 
 ``` r
 plot(hfdr_res, height = 5000)
@@ -1487,7 +1489,7 @@ tax %>%
     ## 10              ***
 
 Les bactéries les plus fortement associées sont les Lachnospiraceae, ce
-qui est cohérent avec les résultats obtenus auparavant avec les fôrets.
+qui est cohérent avec les résultats obtenus auparavant avec les forêts.
 
 # Utilisation des multi-tables
 
