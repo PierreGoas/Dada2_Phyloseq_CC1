@@ -686,13 +686,14 @@ tax %>%
 ```
 Les bactéries les plus fortement associées sont les Lachnospiraceae, ce qui est cohérent avec les résultats obtenus auparavant avec les fôrets.
 
-#Multitable techniques
+##Utilisation de multi-tables
 ```{r}
 metab <- read.csv("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/metabolites.csv",row.names = 1)
 microbe_connect <-url("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/microbe.rda")
 load(microbe_connect)
 microbe
 ```
+On télécharge de nouvelles données pour permettre de faire l'ACC (Analyse Canonique des Correspondances). On affiche l'objet PhyloSeq associé à ces données.
 
 ```{r}
 library("genefilter")
@@ -705,19 +706,21 @@ X <- otu_table(microbe)
 X[X > 50] <- 50
 dim(X)
 ```
-
+On filtre les données en ne gardant que les microbes (X) et les métabolites d'intêrets (metab). On observe pour X, 174 lignes (ce sont les microbes) et 12 colonnes (qui correspondent aux échantillons)
 ```{r}
 dim(metab)
 ```
+On observe pour metab, 405 lignes (les métabolites d'intêrets) et 12 colonnes (échantillons)
 
 ```{r}
 library(PMA)
 cca_res <- CCA(t(X),  t(metab), penaltyx = .15, penaltyz = .15)
 ```
-
+Penaltyx (nombre de microbe) et Penaltyz (nombre de métabolites d'intêrets) sont des pénalités de parcimonie. Plus leur valeur est faible, plus le nombre de microbe et métabolite diminue. On fait une sélection des microbes et des métabolites pour la réalisation de la PCA (Principal Component Analysis)
 ```{r}
 cca_res
 ```
+On a retenu 5 microbes et 15 métabolites. Ces données nous permettent d'expliquer la covariation entre les deux tableaux. Ces 20 caractéristiques montrent une corrélarion de 0,97, signifiant qu'il y a des signaux similaires entre ces deux tableaux, et les 20 caractéristiques sélectionnées peuvent montrer avec une bonne confiance ces signaux.
 
 ```{r}
 combined <- cbind(t(X[cca_res$u != 0, ]),
@@ -751,4 +754,4 @@ ggplot() +  geom_point(data = sample_info,
                    100 * round(pca_res$eig[2] / sum(pca_res$eig), 2)),
        fill = "Feature Type", col = "Sample Type")
 ```
-
+On a utiliser les 20 caractéristiques précédentes pour comprimer les données du tableau. Le graphe montre différents types d'échantillons, les métabolites et les OTUs. On compare les échantillons qui ont été mesurés et les influences que peuvent avoir certains facteurs sur les métaboites et OTU. Par exemple, il y a de grande variation entre PD et ST, qui correspondent à des régimes alimentaires différents.
