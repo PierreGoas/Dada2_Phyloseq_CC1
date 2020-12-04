@@ -646,9 +646,8 @@ ggplot(abund_sums) +
   facet_grid(type ~ .) +
   xlab("Total abundance within sample")
 ```
-Comparaison des transformations DESeq2 et log(1+x). On observe l'abondance totale des échantillons par l'utilisation des deux méthodes de transformation.
+Comparaison des transformations DESeq2 et log(1+x)(transformation facilitée. On observe l'abondance totale des échantillons par l'utilisation des deux méthodes de transformation. Il y a certaines similitudes mais des différences prononcées entre ces deux échantillons. DESeq2 donne plus de résultats pour les abondances moyennes et faibles. Le log écrase les données faible, donc les résultats sont moins flagrants.
 
-##Haut : transformation de l'abondance dans chaque échantillon; Bas : le même avec comparaison facilitée
 
 ```{r}
 library("structSSI")
@@ -661,16 +660,19 @@ el[, 2] <- el_names[as.numeric(el0[, 2])]
 unadj_p <- treePValues(el, abund, sample_data(pslog)$age_binned)
 ```
 
+
 ##Correction p-value
 ```{r}
 hfdr_res <- hFDR.adjust(unadj_p, el, .75)
 summary(hfdr_res)
 ```
+Par l'utilisation du test hiérarchique, nous pouvons corriger la p-value pour permettre d'affiner nos résultats (résultats plus significatifs).
 
 ##Show a screenshot of a subtree with many differentially abundant bacteria, as determined by the hierarchical testing procedure.
 ```{r}
 plot(hfdr_res, height = 5000)
 ```
+Un onglet s'ouvre mais le graphique n'apparait pas. On devrait un arbre contenant des bactéries de différentes abondances. La p-value s'affiche quand on passe sur un des points. Les couleurs indiquent la puissance des associations.
 
 ```{r}
 tax <- tax_table(pslog)[, c("Family", "Genus")] %>%
@@ -682,6 +684,7 @@ tax %>%
   left_join(hfdr_res@p.vals) %>%
   arrange(adjp) %>% head(10)
 ```
+Les bactéries les plus fortement associées sont les Lachnospiraceae, ce qui est cohérent avec les résultats obtenus auparavant avec les fôrets.
 
 #Multitable techniques
 ```{r}
