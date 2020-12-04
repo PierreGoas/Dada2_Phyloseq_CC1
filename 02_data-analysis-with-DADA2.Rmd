@@ -14,14 +14,13 @@ output:
 library("Rcpp")
 library("dada2")
 ```
-On importe les galeries nécessaires pour la réalisation de l'excercie
+On importe les galeries nécessaires pour la réalisation de l'excercice
 
 ```{r}
 path <- "~/MiSeq_SOP"
 list.files(path)
 ```
-Chargement des données fastq sur la donnée path
-
+Chargement des données fastq.
 ```{r}
 fnFs <- sort(list.files(path, pattern="_R1_001.fastq", full.names = TRUE))
 fnRs <- sort(list.files(path, pattern="_R2_001.fastq", full.names = TRUE))
@@ -35,11 +34,11 @@ Association des fnFs et fnRS entre eux (correspondance entre les données)
 ```{r}
 plotQualityProfile(fnFs[1:4])
 ```
-Affichage du graphe de qualité des données fnFs.
+Affichage des graphes de qualité des données fnFs.
 En gris : heat map de la fréquence de chaque score de qualité de chaque position de base
 En vert : score de qualité moyen de chaque base
 En rouge : proportion graduée des reads jusqu'à une certaine position (ici, elle est plate car les reads faites sur Illumina sont de même longueur donc ce n'est pas très utile pour ce cas présent)
-Résultat : bon. On va couper les derniers nucléotides car on observe une chute sur la partie droite du graphe. Cette coupure de nucléotide permettra de donner des résultats plus fiable pour la suite des opérations. Ici, on va tronquer les nucléotides à partir de la position 240 (on retire les 10 derniers nucléotides).
+Résultat : bon. On va couper les derniers nucléotides car on observe une chute sur la partie droite du graphe. Cette coupure de nucléotide permettra de donner des résultats plus fiable pour la suite. Ici, on va tronquer les nucléotides à partir de la position 240 (on retire les 10 derniers nucléotides).
 
 ```{r}
 plotQualityProfile(fnRs[1:4])
@@ -64,11 +63,10 @@ out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(240,160),
               compress=TRUE, multithread=TRUE)
 head(out)
 ```
-Les données sont filtrés, ie que les derniers nucléotides vont être retirés (fnFs : à partir de 240; fnRd : à partir de 160). Seulement 2 erreurs peuvent être attendues lors de la filtration
+Les données sont filtrés, ie que les derniers nucléotides vont être retirés (fnFs : à partir de 240; fnRd : à partir de 160). Seulement 2 erreurs peuvent être acceptées lors de la filtration
 
 ##Calcul des erreurs et visualisation de ces derniers
 
-calcul modèle erreurs à partir des données de séquençage. Applique méthodes sur forward puis reverse
 ```{r}
 errF <- learnErrors(filtFs, multithread=TRUE)
 ```
@@ -84,7 +82,7 @@ plotErrors(errF, nominalQ=TRUE)
 ```
 Représentation des fréquences d'erreurs estimées.
 Points gris : taux d'erreurs observées pour chacun des scores de qualité consensus.
-Ligne noire : taux d'erreurs estimé après que l'algorithme ait réuni toutes les informations (liée aux taux d'erreurs estimés)
+Ligne noire : taux d'erreurs estimé après que l'algorithme ait réuni toutes les informations liée aux taux d'erreurs estimés
 Ligne rouge : taux d'erreurs attendu selon le Q-score
 Corrélation entre les taux d'erreurs estimés et observés, diminution quand le score de qualité augmente -> on peut poursuivre.
 
@@ -119,7 +117,7 @@ Alignement des séquences pour former des contigues. L'alignement se fait avec l
 seqtab <- makeSequenceTable(mergers)
 dim(seqtab)
 ```
-Construction d'ASV (table d'OTU)? Ici, sur les 20 échantillons, 293 ASV ont été crée
+Construction d'ASV (table d'OTU). Ici, sur les 20 échantillons, 293 ASV ont été crée
 
 ```{r}
 table(nchar(getSequences(seqtab)))
@@ -132,7 +130,7 @@ Visualisation de la distribution des longueurs de séquences. Ici, les différen
 seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
 dim(seqtab.nochim)
 ```
-Dada a corrigé les erreurs de substitutions et d'index. Mais il reste les séquences chimériques (séquence contenant de l'information de plusiseurs autres séquences) à retirer. L'identification se fait par construction de deux séquences (une gauche et une droite), provenant de séquences dites parents retrouvées abondament dans notre échantillon. Ici, 20232 séquences chimériques ont été identifiées
+Dada2 a corrigé les erreurs de substitutions et d'index. Mais il reste les séquences chimériques (séquence contenant de l'information de plusiseurs autres séquences) à retirer. L'identification se fait par construction de deux séquences (une gauche et une droite), provenant de séquences dites parents retrouvées abondament dans notre échantillon. Ici, 20232 séquences chimériques ont été identifiées
 
 ```{r}
 sum(seqtab.nochim)/sum(seqtab)
@@ -156,6 +154,7 @@ Récapitulatif des reads qui ont traversé les différentes étapes de filtratio
 ```{bash}
 wget https://zenodo.org/record/3986799/files/silva_nr99_v138_train_set.fa.gz
 ```
+Téléchargement des données sur Silva
 
 ```{r}
 taxa <- assignTaxonomy(seqtab.nochim, "~/Dada2_Phyloseq_CC1/silva_nr99_v138_train_set.fa.gz", multithread=TRUE)
@@ -167,19 +166,19 @@ Assignation des séquences étudiées à la classification. Cette assignation se
 ```{bash}
 wget https://zenodo.org/record/3986799/files/silva_species_assignment_v138.fa.gz
 ```
+Importation des données d'espèces pour la taxonomie.
 
 ```{r}
 taxa <- addSpecies(taxa, "~/Dada2_Phyloseq_CC1/silva_species_assignment_v138.fa.gz")
 ```
-Fin de la partie no réalisé
-
+Assignation des espèces à la taxonomie précédement créée.
 
 ```{r}
 taxa.print <- taxa # Removing sequence rownames for display only
 rownames(taxa.print) <- NULL
 head(taxa.print)
 ```
-L'assignation taxonomique donne le tableau ci-dessus. Elle donne jusqu'à le genre ce qu'elle a pu identifier des reads à analyser, en les comparant avec les reads contenus dans la banque de Silva.
+L'assignation taxonomique donne le tableau ci-dessus. Elle donne jusqu'au genre ce qu'elle a pu identifier des reads à analyser, en les comparant avec les reads contenus dans la banque de Silva. Aucune espèce n'a pu être identifiée à partir des reads.
 
 ##Evaluation de la précisison
 
@@ -188,7 +187,7 @@ unqs.mock <- seqtab.nochim["Mock",]
 unqs.mock <- sort(unqs.mock[unqs.mock>0], decreasing=TRUE) # Drop ASVs absent in the Mock
 cat("DADA2 inferred", length(unqs.mock), "sample sequences present in the Mock community.\n")
 ```
-"Mock community" est un ensemble contenant différentes souches connues qui ont été séquencées. Cette communauté contient 20 souches différentes. On utilise Dada2 sur cette communauté pour vérifier sa précision. Ici, dada2 a déduit 20 échantillons avec des séquences.
+"Mock community" est un ensemble contenant différentes souches connues qui ont été séquencées. Cette communauté contient 20 souches différentes. On utilise Dada2 sur cette communauté pour vérifier sa précision. Ici, dada2 a déduit 20 échantillons avec les séquences, ce qui est bien.
 
 ```{r}
 mock.ref <- getSequences(file.path(path, "HMP_MOCK.v35.fasta"))
@@ -197,9 +196,9 @@ cat("Of those,", sum(match.ref), "were exact matches to the expected reference s
 ```
 Parmi ces 20 échantillons, 20 correspondaient aux séquences de références. Dada2 fonctionne bien.
 
-#Premier sur Phyloseq (fin tuto Dada2)
+#Premier pas sur Phyloseq (fin tuto Dada2)
 
-##Préparation des données
+##Importation des librairies et préparation des données
 
 ```{r}
 library(phyloseq)
@@ -225,9 +224,9 @@ library("phyloseq")
 ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE), 
                sample_data(samdf), 
                tax_table(taxa))
-ps <- prune_samples(sample_names(ps) != "Mock", ps) # Remove mock sample
+ps <- prune_samples(sample_names(ps) != "Mock", ps)
 ```
-Construction de l'objet PhyloSeq : on associe la table des OTU, les données des échnatillons et de la table taxonomique à ps. La dernière ligne permet d'enlever la communité artificielle ("mock")
+Construction de l'objet PhyloSeq : on associe la table des OTU, les données des échantillons et de la table taxonomique à ps. La dernière ligne permet d'enlever la communité artificielle ("mock")
 
 ```{r}
 dna <- Biostrings::DNAStringSet(taxa_names(ps))
@@ -243,7 +242,7 @@ Visualisation de l'objet PhyloSeq
 ```{r}
 plot_richness(ps, x="Day", measures=c("Shannon", "Simpson"), color="When")
 ```
-Pas de grandes différences entre les échantillons contenus dans prélévements "early" (entre eux) et les prélévemnts "late" (entre aux aussi)
+Pas de grandes différences entre les échantillons contenus dans prélévements "early" (entre eux) et les prélévemnts "late" (entre aux aussi). Au fil des jours, la diversité n'a pas variée énormement.
 
 ##Ordination
 
@@ -255,7 +254,7 @@ On transforme les données pour qu'ils soient adaptés à l'utilisation de Bray-
 ```{r}
 plot_ordination(ps.prop, ord.nmds.bray, color="When", title="Bray NMDS")
 ```
-A partir de ce graphe, on peut une grande différence entre les échantillons "early" et "late"
+A partir de ce graphe, on peut une grande différence entre les échantillons "early" et "late" (dans leur communauté microbienne)
 
 ## Représention des échantillons en "histogramme" (bar plot)
 
@@ -266,3 +265,4 @@ ps.top20 <- prune_taxa(top20, ps.top20)
 plot_bar(ps.top20, x="Day", fill="Family") + facet_wrap(~When, scales="free_x")
 ```
 On observe qu'il n'y a pas de grande différence entre les échantillons "early" et "late" au niveau des familles de micro-organismes.
+Il n'y pas de grandes différences sur la diversité ni sur les familles bactériennes. Mais on observe une nette séparation entre les deux échantillons. Cette différence est peut-être dû aux espèces présentes dans les familles.
